@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2021 Akretion
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+<odoo>
+
+    <record model="ir.ui.view" id="account_journal_form_view">
+        <field name="name">account.journal.form (in account_factoring)</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form" />
+        <field name="arch" type="xml">
+            <field name="type" position="after">
+                <field name="is_factor" />
+            </field>
+            <page name="advanced_settings" position="after">
+                <page
+                    name="factoring"
+                    string="Factoring"
+                    attrs="{'invisible': [('is_factor', '=', False)]}"
+                >
+                    <group>
+                        <group>
+                            <field name="factor_fee" />
+                            <field name="factor_fee_account_id" />
+                            <field name="factor_tax_id" />
+                            <field name="factor_partner_id" />
+                            <field name="factor_holdback_percent" />
+                            <field name="factor_holdback_account_id" />
+                            <field name="factor_holdback_balance" />
+                            <field name="factor_limit_holdback_account_id" />
+                            <field name="factor_limit_holdback_balance" />
+                            <field name="factor_debit" />
+                            <field name="factor_credit" />
+                            <field name="factor_balance" />
+                        </group>
+                    </group>
+                </page>
+            </page>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2021 Akretion
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+<odoo>
+
+    <record model="ir.ui.view" id="account_move_form_view">
+        <field name="name">account.move.form (in account_factoring)</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="arch" type="xml">
+            <button name="action_register_payment" position="after">
+                 <button
+                    name="button_transfer_to_factor"
+                    type="object"
+                    attrs="{'invisible': ['|', ('payment_state_with_factor', '!=', 'to_transfer_to_factor'), ('state', '!=', 'posted')]}"
+                    class="oe_highlight"
+                    string="Transfer to Factor"
+                    groups="account.group_account_invoice"
+                />
+            </button>
+            <button name="button_draft" position="after">
+                 <button
+                    name="button_factor_paid"
+                    type="object"
+                    attrs="{'invisible': ['|', ('payment_state_with_factor', '!=', 'transferred_to_factor'), ('state', '!=', 'posted')]}"
+                    class="oe_highlight"
+                    string="Factor Paid"
+                    groups="account.group_account_invoice"
+                />
+            </button>
+            <field name="payment_state" position="after">
+                 <field name="payment_state_with_factor" invisible="1" />
+            </field>
+            <xpath expr="//sheet/widget[1]" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'invisible': ['|', ('payment_state_with_factor', '=', 'transferred_to_factor'), '|', ('payment_state', '!=', 'paid'), ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))]}</attribute>
+            </xpath>
+            <xpath expr="//sheet/widget[1]" position="after">
+                <widget
+                    name="web_ribbon"
+                    title="Transferred"
+                    attrs="{'invisible': ['|', ('payment_state_with_factor', '!=', 'transferred_to_factor'), '|', ('payment_state', '!=', 'paid'), ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))]}"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_move_search_view">
+        <field name="name">account.move.search (in account_factoring)</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter" />
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='in_payment']" position="after">
+                <filter
+                    name="to_transfer_to_factor"
+                    string="To Transfer to Factor"
+                    domain="[('payment_state_with_factor', '=', 'to_transfer_to_factor'), ('state', '=', 'posted')]"
+                />
+                <filter
+                    name="transferred_to_factor"
+                    string="Transferred to Factor"
+                    domain="[('payment_state_with_factor', '=', 'transferred_to_factor'), ('state', '=', 'posted')]"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="account_move_tree_view">
+        <field name="name">account.move.tree (in account_factoring)</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_out_invoice_tree" />
+        <field name="arch" type="xml">
+            <field name="payment_state" position="attributes">
+                 <attribute name="invisible">1</attribute>
+            </field>
+            <field name="payment_state" position="after">
+                 <field
+                    name="payment_state_with_factor"
+                    widget="badge"
+                    decoration-danger="payment_state == 'not_paid'"
+                    decoration-warning="payment_state in ('partial', 'in_payment')"
+                    decoration-success="payment_state in ('paid', 'reversed')"
+                    attrs="{'invisible': [('payment_state', 'in', ('invoicing_legacy'))]}"
+                />
+            </field>
+        </field>
+    </record>
+
+</odoo>
