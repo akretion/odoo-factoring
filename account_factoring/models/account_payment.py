@@ -201,4 +201,16 @@ class AccountPayment(models.Model):
                         move._cleanup_write_orm_values(pay, payment_vals_to_write)
                     )
         else:
-            return super()._synchronize_from_moves(changed_fields)
+            # bank statement transfer from factor to bank account will fail
+            # because factor accounts are not receivable nor payable.
+            context_dict = {}
+            for pay in self:
+                for line in pay.move_id.line_ids:
+                    if line.move_id.journal_id.is_factor:
+                        context_dict = {'skip_account_move_synchronization': True}
+                        # TODO may be do some synch manually?
+                        break
+            return super(
+                AccountPayment,
+                self.with_context(context_dict)
+            )._synchronize_from_moves(changed_fields)
