@@ -31,6 +31,9 @@ class AccountMove(models.Model):
         compute="_compute_payment_state_with_factor",
     )
 
+    factor_transfer_id = fields.Many2one("account.move", compute="_compute_factor_transfer_id")
+    factor_payment_id = fields.Many2one("account.move", compute="_compute_factor_payment_id")
+
     @api.depends("payment_state", "payment_mode_id")
     def _compute_payment_state_with_factor(self):
         for move in self:
@@ -49,6 +52,39 @@ class AccountMove(models.Model):
                     move.payment_state_with_factor = move.payment_state
             else:
                 move.payment_state_with_factor = move.payment_state
+
+    def _compute_factor_transfer_id(self):
+        for inv in self:
+            factor_transfers = (
+                inv.mapped("line_ids")
+                .mapped("full_reconcile_id")
+                .reconciled_line_ids.mapped("move_id")
+                .filtered(
+                    lambda move: move.id not in self.ids
+                    and move.state != 'cancel'
+                )
+            )
+            if factor_transfers:
+                inv.factor_transfer_id = factor_transfers[0]
+            else:
+                inv.factor_transfer_id = False
+
+    def _compute_factor_payment_id(self):
+        for inv in self:
+            factor_payments = (
+                inv.factor_transfer_id.mapped("line_ids").filtered(
+                    lambda line: line.account_id == inv.factor_transfer_id.journal_id.factor_holdback_account_id
+                ).mapped("full_reconcile_id")
+                .reconciled_line_ids.mapped("move_id")
+                .filtered(
+                    lambda move: move.id not in self.factor_transfer_id.ids
+                    and move.state != 'cancel'
+                )
+            )
+            if factor_payments:
+                inv.factor_payment_id = factor_payments[0]
+            else:
+                inv.factor_payment_id = False
 
     def button_transfer_to_factor(self):
         """
@@ -73,19 +109,12 @@ class AccountMove(models.Model):
 
     def button_factor_paid(self):
         self.ensure_one()
-        factor_transfers = (
-            self.mapped("line_ids")
-            .mapped("full_reconcile_id")
-            .reconciled_line_ids.mapped("move_id")
-            .filtered(lambda line: line.id not in self.ids)
-        )
-        print(factor_transfers)
-        lines = factor_transfers.line_ids.filtered(
+        lines = self.factor_transfer_id.line_ids.filtered(
             lambda line: float_compare(line.debit, 0.0, precision_rounding=0.01) > 0
             and line.account_id.id
             in (
-                factor_transfers[0].journal_id.factor_holdback_account_id.id,
-                factor_transfers[0].journal_id.factor_limit_holdback_account_id.id,
+                self.factor_transfer_id.journal_id.factor_holdback_account_id.id,
+                self.factor_transfer_id.journal_id.factor_limit_holdback_account_id.id,
             )
             and not line.reconciled
         )
@@ -103,7 +132,7 @@ class AccountMove(models.Model):
                     "debit": total,
                     "credit": 0.0,
                     "partner_id": self.partner_id.id,
-                    "account_id": factor_transfers[0].journal_id.default_account_id.id,
+                    "account_id": self.factor_transfer_id.journal_id.default_account_id.id,
                 },
             ),
         ]

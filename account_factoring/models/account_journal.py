@@ -28,7 +28,7 @@ class AccountJournal(models.Model):
     )
     factor_limit_holdback_account_id = fields.Many2one(
         "account.account",
-        string="Factor Linmit Holdback Account",
+        string="Factor Limit Holdback Account",
         help="Holdback when the customer credit is over the limit",
         domain="[('internal_type', '=', 'other'), ('deprecated', '=', False), ('company_id', '=', current_company_id)]",
     )
@@ -54,6 +54,9 @@ class AccountJournal(models.Model):
     factor_limit_holdback_balance = fields.Monetary(
         string="Factor Limit Holdback Balance", compute="_compute_factor_debit_credit"
     )
+    factor_customer_credit = fields.Monetary(
+        string="Factor Customer Credit", compute="_compute_factor_debit_credit"
+    )
 
     def _compute_factor_debit_credit(self):
         self.factor_debit = 0
@@ -61,30 +64,42 @@ class AccountJournal(models.Model):
         self.factor_balance = 0
         if not self.ids:
             return
-        partner = self._context.get("compute_factor_partner")
-        if partner:
-            where_extra = "AND partner_id=%s AND parent_state='posted'" % (
-                int(partner.id),  # int() is for blocking SQL injection
-            )
-        else:
-            where_extra = "AND parent_state='posted'"
         account_ids = (
             self.mapped("default_account_id").ids
             + self.mapped("factor_holdback_account_id").ids
             + self.mapped("factor_limit_holdback_account_id").ids
         )
+        payment_modes = self.env['account.payment.mode'].search(
+            [('fixed_journal_id', 'in', self.ids)]
+        )
+
+        partner = self._context.get("compute_factor_partner")
+        if partner:
+            where_extra = """
+                AND line.partner_id = %s AND parent_state = 'posted'
+            """ % (
+                int(partner.id)  # int() is for blocking SQL injection
+            )
+            account_ids += (partner.property_account_receivable_id.id,)
+        else:
+            where_extra = "AND parent_state='posted'"
+
         self.env.cr.execute(
             """
             SELECT line.account_id,
                    SUM(line.balance) AS balance,
                    SUM(line.debit) AS debit,
                    SUM(line.credit) AS credit
-            FROM account_move_line line
+            FROM account_move_line AS line
+            JOIN account_move AS move
+            ON line.move_id = move.id
             WHERE line.account_id IN %s
+            AND (move.move_type != 'out_invoice' OR payment_state_with_factor != 'factor_paid')
+            AND (move.move_type != 'out_invoice' OR move.payment_mode_id IN %s)
         """
             + where_extra
             + "GROUP BY line.account_id",
-            [tuple(account_ids)],
+            [tuple(account_ids), tuple(payment_modes.ids) or (0,)],
         )
         result = {r["account_id"]: r for r in self.env.cr.dictfetchall()}
         for journal in self:
@@ -108,6 +123,12 @@ class AccountJournal(models.Model):
                 )["balance"]
             else:
                 journal.factor_limit_holdback_balance = 0
+            if partner:
+                journal.factor_customer_credit = result.get(
+                    partner.property_account_receivable_id.id
+                )["debit"]  # debit of customer invoices and != 'factor_paid'
+            else:
+                journal.factor_customer_credit = 0
 
     @api.depends("type")
     def _compute_default_account_type(self):

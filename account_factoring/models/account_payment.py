@@ -45,54 +45,42 @@ class AccountPayment(models.Model):
         factor_holdback_amount = self.currency_id.round(
             amount * self.journal_id.factor_holdback_percent / 100.0
         )
-        # TODO or is the following more complex way required?
-        # print("factor global balance:", self.journal_id.factor_balance)
-        # factor_global_balance = self.journal_id.factor_balance + amount
-        # factor_holdback_amount = self.currency_id.round(
-        #     factor_global_balance * self.journal_id.factor_holdback_percent / 100.0
-        #     - self.journal_id.factor_holdback_balance
-        # )
-        # print("10% of amount =", amount * self.journal_id.factor_holdback_percent / 100.0)
-        # print("computed factor_holdback_amount", factor_holdback_amount)
-        # # we invalidate the global factor_balance from the cache to have the partner one now:
-        # self.env['account.journal'].invalidate_cache(fnames=['factor_balance'])
 
-        old_customer_balance = self.with_context(
+        initial_balance_journal = self.with_context(
             {"compute_factor_partner": self.partner_id}
-        ).journal_id.factor_balance
-        print("OLD CUSTOMER BAL", old_customer_balance)
+        ).journal_id
+        customer_balance = initial_balance_journal.factor_customer_credit
+        initial_customer_hodlback_balance = initial_balance_journal.factor_holdback_balance
+        initial_customer_limit_hodlback_balance = initial_balance_journal.factor_limit_holdback_balance
+        print("INIT CUSTOMER BAL", customer_balance,
+            initial_customer_hodlback_balance, initial_customer_limit_hodlback_balance)
+
+        # REA = encours - limit - holback_balance - limit_holdback_balance
+        factor_limit_holdback_amount = self.currency_id.round(
+            customer_balance
+            #+ original_liquidity_line["debit"]
+            - self.partner_id.factor_credit_limit
+            - initial_customer_hodlback_balance
+            - factor_holdback_amount
+            - initial_customer_limit_hodlback_balance
+        )
+        print("factor_limit_holdback_amount", factor_limit_holdback_amount)
+
+        if factor_limit_holdback_amount < 0:
+            factor_limit_holdback_amount = 0
+
+        # TODO limit_holdback_amount can also be 0 under other conditions
+        # such as customer_balance < 40% of total factor_balance...
 
         remaining_amount = self.currency_id.round(
             original_liquidity_line["debit"]
             - factor_fee_amount
             - factor_fee_tax_amount
             - factor_holdback_amount
+            - factor_limit_holdback_amount
         )
-        print("1st remaining_amount", remaining_amount)
+        print("remaining_amount", remaining_amount)
 
-        if (
-            old_customer_balance + remaining_amount
-            > self.partner_id.factor_credit_limit
-        ):
-            factor_limit_holdback_amount = self.currency_id.round(
-                old_customer_balance
-                + remaining_amount
-                - self.partner_id.factor_credit_limit
-            )
-            remaining_amount = self.currency_id.round(
-                remaining_amount - factor_limit_holdback_amount
-            )
-            print("over limit! -> new remaining_amount", remaining_amount)
-        else:
-            factor_limit_holdback_amount = 0.0
-        print("LIMIT", self.partner_id.factor_credit_limit)
-        print("factor_limit_holdback_amount", factor_limit_holdback_amount)
-
-        fee_tax_account = (
-            self.journal_id.factor_tax_id.invoice_repartition_line_ids.filtered(
-                lambda line: line.repartition_type == "tax"
-            )[0].account_id
-        )
 
         liquidity_lines = []
         dg = self.currency_id.rounding
@@ -130,6 +118,11 @@ class AccountPayment(models.Model):
             )
 
         if float_compare(factor_fee_tax_amount, 0.0, precision_rounding=dg) > 0:
+            fee_tax_account = (
+                self.journal_id.factor_tax_id.invoice_repartition_line_ids.filtered(
+                    lambda line: line.repartition_type == "tax"
+                )[0].account_id
+            )
             liquidity_lines.append(  # TODO fill tax_tag_ids?
                 {
                     "name": "%s - %s"
@@ -181,7 +174,7 @@ class AccountPayment(models.Model):
                     "partner_id": original_liquidity_line[
                         "partner_id"
                     ],  # TODO or factor partner?
-                    "account_id": self.journal_id.factor_holdback_limit_account_id.id,
+                    "account_id": self.journal_id.factor_limit_holdback_account_id.id,
                 }
             )
 

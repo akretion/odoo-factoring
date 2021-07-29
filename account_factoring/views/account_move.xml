@@ -31,6 +31,10 @@
             <field name="payment_state" position="after">
                  <field name="payment_state_with_factor" invisible="1" />
             </field>
+            <field name="ref" position="after">
+                 <field name="factor_transfer_id" />
+                 <field name="factor_payment_id" />
+            </field>
             <xpath expr="//sheet/widget[1]" position="attributes">
                 <attribute
                     name="attrs"
