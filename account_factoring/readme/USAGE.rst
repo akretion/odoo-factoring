@@ -41,3 +41,15 @@ with the amounts made available to you by the factor.
 When you click on the "Factor Paid" button, the hold back amounts are given back to the factor account.
 
 
+Bank statements
+===============
+
+
+You should use standard bank statements to register the money transfer from the factor account to your bank account.
+The only difference is that you will reconcile factor bank statement lines not with a payable or a receivable but with
+using the miscellaneous tab instead. You should 1st match against the factor account.
+
+But in the case where the amount holded back by the factor is inferior to what was expected,
+then you can select the appropriate lines from the limit holdback account for reconciliation.
+
+
