@@ -99,6 +99,16 @@ class AccountPayment(models.Model):
                     "account_id": self.journal_id.default_account_id.id,
                 }
             )
+        elif float_compare(
+            factor_limit_holdback_amount + remaining_amount,
+            0,
+            precision_rounding=dg
+        ) > 0:
+            # the factor customer balance is such that all money is holded back.
+            # (remaining_amount is negative)
+            # now we should make sure that we don't holdback more than the max possible:
+            factor_limit_holdback_amount = factor_limit_holdback_amount + remaining_amount
+
 
         if float_compare(factor_fee_amount, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
@@ -112,7 +122,7 @@ class AccountPayment(models.Model):
                     "credit": 0.0,
                     "partner_id": original_liquidity_line[
                         "partner_id"
-                    ],  # TODO or factor partner?
+                    ],
                     "account_id": self.journal_id.factor_fee_account_id.id,
                 }
             )
@@ -134,7 +144,7 @@ class AccountPayment(models.Model):
                     "credit": 0.0,
                     "partner_id": original_liquidity_line[
                         "partner_id"
-                    ],  # TODO or factor partner?
+                    ],
                     "account_id": fee_tax_account.id,
                 }
             )
@@ -156,7 +166,7 @@ class AccountPayment(models.Model):
                     "credit": 0.0,
                     "partner_id": original_liquidity_line[
                         "partner_id"
-                    ],  # TODO or factor partner?
+                    ],
                     "account_id": self.journal_id.factor_holdback_account_id.id,
                 }
             )
@@ -173,11 +183,10 @@ class AccountPayment(models.Model):
                     "credit": 0.0,
                     "partner_id": original_liquidity_line[
                         "partner_id"
-                    ],  # TODO or factor partner?
+                    ],
                     "account_id": self.journal_id.factor_limit_holdback_account_id.id,
                 }
             )
-
         return liquidity_lines + new_line_vals
 
     def _synchronize_from_moves(self, changed_fields):
@@ -201,14 +210,19 @@ class AccountPayment(models.Model):
                         move._cleanup_write_orm_values(pay, payment_vals_to_write)
                     )
         else:
-            # bank statement transfer from factor to bank account will fail
+            # if we did nothing bank statement transfer from factor to bank account would fail
             # because factor accounts are not receivable nor payable.
             context_dict = {}
+            factor_accounts = set()
+            for journal in self.env['account.journal'].search([
+                ("is_factor", "=", True)
+            ]):
+                factor_accounts.add(journal.default_account_id)
+                factor_accounts.add(journal.factor_holdback_account_id)
             for pay in self:
-                for line in pay.move_id.line_ids:
-                    if line.move_id.journal_id.is_factor:
+                for line in pay.line_ids:
+                    if line.journal_id.type == "bank" and line.account_id in factor_accounts:
                         context_dict = {'skip_account_move_synchronization': True}
-                        # TODO may be do some synch manually?
                         break
             return super(
                 AccountPayment,
