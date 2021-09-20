@@ -91,15 +91,14 @@ class AccountMove(models.Model):
         Unlike the original account.payment.register wizard,
         we don't transfer invoices in batch because we need
         instead a per invoice /per partner fine account.move.line control
-        TODO do we really need the account.payment.register wizard?
         """
-        for move in self:
+        for inv in self:
             wiz = (
                 self.env["account.payment.register"]
                 .with_context(
                     {
                         "active_model": "account.move",
-                        "active_ids": [move.id],
+                        "active_ids": [inv.id],
                     }
                 )
                 .create({})
