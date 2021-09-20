@@ -31,10 +31,16 @@
             <field name="payment_state" position="after">
                  <field name="payment_state_with_factor" invisible="1" />
             </field>
-            <field name="ref" position="after">
-                 <field name="factor_transfer_id" />
-                 <field name="factor_payment_id" />
-            </field>
+            <page name="other_info" position="after">
+                <page id="factoring" string="Factoring" name="factoring" attrs="{'invisible': [('payment_mode_id', '=', False)]}">
+                    <group id="factoring_group">
+                        <group>
+                            <field name="factor_transfer_id" />
+                            <field name="factor_payment_id" />
+                        </group>
+                    </group>
+                </page>
+            </page>
             <xpath expr="//sheet/widget[1]" position="attributes">
                 <attribute
                     name="attrs"
