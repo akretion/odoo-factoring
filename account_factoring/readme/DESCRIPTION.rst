@@ -1,3 +1,5 @@
-# odoo-factoring
+account_factoring
+=================
 
-Accounts Receivable Factoring for Odoo; incubation before targeting OCA inclusion
+Accounts Receivable Factoring for Odoo.
+This module is in incubation before targeting an OCA inclusion.

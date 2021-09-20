@@ -368,29 +368,17 @@ ul.auto-toc {
 !! changes will be overwritten.                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
 <p><a class="reference external" href="https://odoo-community.org/page/development-status"><img alt="Beta" src="https://img.shields.io/badge/maturity-Beta-yellow.png" /></a> <a class="reference external" href="http://www.gnu.org/licenses/agpl-3.0-standalone.html"><img alt="License: AGPL-3" src="https://img.shields.io/badge/licence-AGPL--3-blue.png" /></a> <a class="reference external" href="https://github.com/akretion/odoo-factoring/tree/14.0/account_factoring"><img alt="akretion/odoo-factoring" src="https://img.shields.io/badge/github-akretion%2Fodoo--factoring-lightgray.png?logo=github" /></a></p>
-<p># odoo-factoring</p>
-<p>Accounts Receivable Factoring for Odoo; incubation before targeting OCA inclusion</p>
+<div class="section" id="id1">
+<h1>account_factoring</h1>
+<p>Accounts Receivable Factoring for Odoo.
+This module is in incubation before targeting an OCA inclusion.</p>
 <p><strong>Table of contents</strong></p>
-<div class="contents local topic" id="contents">
-<ul class="simple">
-<li><a class="reference internal" href="#usage" id="id1">Usage</a></li>
-<li><a class="reference internal" href="#create-a-new-journal" id="id2">Create a new Journal</a></li>
-<li><a class="reference internal" href="#create-a-factor-payment-mode" id="id3">Create a factor payment mode</a></li>
-<li><a class="reference internal" href="#invoicing" id="id4">Invoicing</a></li>
-<li><a class="reference internal" href="#bank-statements" id="id5">Bank statements</a></li>
-<li><a class="reference internal" href="#bug-tracker" id="id6">Bug Tracker</a></li>
-<li><a class="reference internal" href="#credits" id="id7">Credits</a><ul>
-<li><a class="reference internal" href="#authors" id="id8">Authors</a></li>
-<li><a class="reference internal" href="#maintainers" id="id9">Maintainers</a></li>
-</ul>
-</li>
-</ul>
 </div>
 <div class="section" id="usage">
-<h1><a class="toc-backref" href="#id1">Usage</a></h1>
+<h1>Usage</h1>
 </div>
 <div class="section" id="create-a-new-journal">
-<h1><a class="toc-backref" href="#id2">Create a new Journal</a></h1>
+<h1>Create a new Journal</h1>
 <p>Example in France fro FactoFrance:</p>
 <ol class="arabic simple">
 <li>create a new account journal of type Bank with the Is Factor checkbox checked.</li>
@@ -405,13 +393,13 @@ ul.auto-toc {
 </ol>
 </div>
 <div class="section" id="create-a-factor-payment-mode">
-<h1><a class="toc-backref" href="#id3">Create a factor payment mode</a></h1>
+<h1>Create a factor payment mode</h1>
 <p>Create a new inbound payment mode with a fixed bank journal
 and associate the factor journal to it.
 You can set this payment mode as default for a customer in the Sale &amp; Purchase tab of the customer.</p>
 </div>
 <div class="section" id="invoicing">
-<h1><a class="toc-backref" href="#id4">Invoicing</a></h1>
+<h1>Invoicing</h1>
 <p>Create a customer invoice, set the payment mode as factor (if not coming from the customer settings already) and confirm the invoice.
 The confirmed invoice account.move is exactly the same as a normal invoice so far.</p>
 <p>Now a new button “Transfer to Factor” is available in place of the pay invoice button. You can use it to transfer the customer credit
@@ -423,7 +411,7 @@ with the amounts made available to you by the factor.</p>
 <p>When you click on the “Factor Paid” button, the hold back amounts are given back to the factor account.</p>
 </div>
 <div class="section" id="bank-statements">
-<h1><a class="toc-backref" href="#id5">Bank statements</a></h1>
+<h1>Bank statements</h1>
 <p>You should use standard bank statements to register the money transfer from the factor account to your bank account.
 The only difference is that you will reconcile factor bank statement lines not with a payable or a receivable but with
 using the miscellaneous tab instead. You should 1st match against the factor account.</p>
@@ -431,7 +419,7 @@ using the miscellaneous tab instead. You should 1st match against the factor acc
 then you can select the appropriate lines from the limit holdback account for reconciliation.</p>
 </div>
 <div class="section" id="bug-tracker">
-<h1><a class="toc-backref" href="#id6">Bug Tracker</a></h1>
+<h1>Bug Tracker</h1>
 <p>Bugs are tracked on <a class="reference external" href="https://github.com/akretion/odoo-factoring/issues">GitHub Issues</a>.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us smashing it by providing a detailed and welcomed
@@ -439,15 +427,21 @@ If you spotted it first, help us smashing it by providing a detailed and welcome
 <p>Do not contact contributors directly about support or help with technical issues.</p>
 </div>
 <div class="section" id="credits">
-<h1><a class="toc-backref" href="#id7">Credits</a></h1>
+<h1>Credits</h1>
 <div class="section" id="authors">
-<h2><a class="toc-backref" href="#id8">Authors</a></h2>
+<h2>Authors</h2>
 <ul class="simple">
 <li>Akretion</li>
 </ul>
 </div>
+<div class="section" id="contributors">
+<h2>Contributors</h2>
+<ul class="simple">
+<li>Raphaël Valyi &lt;<a class="reference external" href="mailto:raphael.valyi&#64;akretion.com.">raphael.valyi&#64;akretion.com.</a>&gt;</li>
+</ul>
+</div>
 <div class="section" id="maintainers">
-<h2><a class="toc-backref" href="#id9">Maintainers</a></h2>
+<h2>Maintainers</h2>
 <p>This module is part of the <a class="reference external" href="https://github.com/akretion/odoo-factoring/tree/14.0/account_factoring">akretion/odoo-factoring</a> project on GitHub.</p>
 <p>You are welcome to contribute.</p>
 </div>

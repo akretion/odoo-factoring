@@ -19,9 +19,11 @@ Account Factoring
 
 |badge1| |badge2| |badge3| 
 
-# odoo-factoring
+account_factoring
+=================
 
-Accounts Receivable Factoring for Odoo; incubation before targeting OCA inclusion
+Accounts Receivable Factoring for Odoo.
+This module is in incubation before targeting an OCA inclusion.
 
 **Table of contents**
 
@@ -104,6 +106,11 @@ Authors
 ~~~~~~~
 
 * Akretion
+
+Contributors
+~~~~~~~~~~~~
+
+* Raphaël Valyi <raphael.valyi@akretion.com.>
 
 Maintainers
 ~~~~~~~~~~~
