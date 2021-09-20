@@ -1,4 +1,4 @@
-# Copyright (C) 2019 - TODAY Raphaël Valyi - Akretion
+# Copyright (C) 2021 - TODAY Raphaël Valyi - Akretion
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from odoo import _, api, fields, models
