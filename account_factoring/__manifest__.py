@@ -10,6 +10,7 @@
     "author": "Akretion,Odoo Community Association (OCA)",
     "depends": [
         "account_payment_partner",
+        "account_reconciliation_widget",
     ],
     "data": [
         "views/account_journal.xml",
