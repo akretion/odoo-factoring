@@ -118,7 +118,6 @@ class AccountMove(models.Model):
             and not line.reconciled
         )
         total = sum(lines.mapped("debit"))
-        print("TO RECONCILE", lines, total)
         payment_vals_list = [
             (
                 0,
@@ -153,7 +152,6 @@ class AccountMove(models.Model):
                     },
                 )
             )
-        print("payment_vals_list", payment_vals_list)
         payment = self.env["account.payment"].create(
             {
                 "payment_type": "inbound",
@@ -164,7 +162,6 @@ class AccountMove(models.Model):
             }
         )
         payment.action_post()
-        print("payment", payment.id, payment.state)
         domain = [
             ("account_internal_type", "=", "other"),
             ("reconciled", "=", False),
@@ -172,15 +169,7 @@ class AccountMove(models.Model):
         ]
 
         payment_lines = payment.line_ids.filtered_domain(domain)
-        print("payment_lines", payment_lines)
         for account in payment_lines.mapped("account_id"):
-            print(
-                "REC",
-                payment_lines + lines,
-                (payment_lines + lines).filtered_domain(
-                    [("account_id", "=", account.id), ("reconciled", "=", False)]
-                ),
-            )
             (payment_lines + lines).filtered_domain(
                 [("account_id", "=", account.id), ("reconciled", "=", False)]
             ).with_context({"skip_account_move_synchronization": True}).reconcile()

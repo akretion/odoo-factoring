@@ -52,8 +52,6 @@ class AccountPayment(models.Model):
         customer_balance = initial_balance_journal.factor_customer_credit
         initial_customer_hodlback_balance = initial_balance_journal.factor_holdback_balance
         initial_customer_limit_hodlback_balance = initial_balance_journal.factor_limit_holdback_balance
-        print("INIT CUSTOMER BAL", customer_balance,
-            initial_customer_hodlback_balance, initial_customer_limit_hodlback_balance)
 
         # REA = encours - limit - holback_balance - limit_holdback_balance
         factor_limit_holdback_amount = self.currency_id.round(
@@ -64,7 +62,6 @@ class AccountPayment(models.Model):
             - factor_holdback_amount
             - initial_customer_limit_hodlback_balance
         )
-        print("factor_limit_holdback_amount", factor_limit_holdback_amount)
 
         if factor_limit_holdback_amount < 0:
             factor_limit_holdback_amount = 0
@@ -79,8 +76,6 @@ class AccountPayment(models.Model):
             - factor_holdback_amount
             - factor_limit_holdback_amount
         )
-        print("remaining_amount", remaining_amount)
-
 
         liquidity_lines = []
         dg = self.currency_id.rounding
