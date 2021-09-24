@@ -15,7 +15,10 @@
                 >
                     <div class="row">
                         <div class="col overflow-hidden text-left">
-                                <a type="object" name="action_open_factor_holdback">Holdback</a>
+                                <a
+                                type="object"
+                                name="action_open_factor_holdback"
+                            >Holdback</a>
                         </div>
                         <div class="col-auto text-right">
                             <span>
@@ -27,7 +30,9 @@
                         <div class="row">
                             <div class="col overflow-hidden text-left">
                                 <a type="object" name="action_open_factor_to_transfer">
-                                    <t t-esc="dashboard.number_to_transfer" /> to transfer</a>
+                                    <t
+                                        t-esc="dashboard.number_to_transfer"
+                                    /> to transfer</a>
                             </div>
                             <div class="col-auto text-right">
                                 <span>
@@ -40,7 +45,9 @@
                         <div class="row">
                             <div class="col overflow-hidden text-left">
                                 <a type="object" name="action_open_factor_to_pay">
-                                    <t t-esc="dashboard.number_waiting_payment" /> waiting payment</a>
+                                    <t
+                                        t-esc="dashboard.number_waiting_payment"
+                                    /> waiting payment</a>
                             </div>
                             <div class="col-auto text-right">
                                 <span>

@@ -13,7 +13,7 @@ Example in France for FactoFrance:
 8. Factor Holdback %: 10%
 9. Factor Limit Holdback Account: create a new chart account 467020 like 467000, but mark it a reconciable.
 
-	
+
 
 Create a factor payment mode
 ============================
@@ -82,6 +82,3 @@ Akretion had only 1 customer for this initial development and tests are not easy
 because it depends on a specific chart of accounts. So so far this module was tested manually with this scenario
 https://docs.google.com/spreadsheets/d/1bxi1J3XgExy2fX74ixjn52dX1xx1cqH6X-WEhyeXarU/edit?usp=sharing
 were taxes and fees were neglected on purpose.
-
-
-

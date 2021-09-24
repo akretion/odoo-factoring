@@ -69,8 +69,8 @@ class AccountJournal(models.Model):
             + self.mapped("factor_holdback_account_id").ids
             + self.mapped("factor_limit_holdback_account_id").ids
         )
-        payment_modes = self.env['account.payment.mode'].search(
-            [('fixed_journal_id', 'in', self.ids)]
+        payment_modes = self.env["account.payment.mode"].search(
+            [("fixed_journal_id", "in", self.ids)]
         )
 
         partner = self._context.get("compute_factor_partner")
@@ -126,7 +126,9 @@ class AccountJournal(models.Model):
             if partner:
                 journal.factor_customer_credit = result.get(
                     partner.property_account_receivable_id.id
-                )["debit"]  # debit of customer invoices and != 'factor_paid'
+                )[
+                    "debit"
+                ]  # debit of customer invoices and != 'factor_paid'
             else:
                 journal.factor_customer_credit = 0
 
@@ -141,18 +143,33 @@ class AccountJournal(models.Model):
                 ).id
 
     def action_open_factor_to_transfer(self):
-        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
-        action["domain"] = "[('payment_state_with_factor', '=', 'to_transfer_to_factor')]"
+        action = self.env["ir.actions.actions"]._for_xml_id(
+            "account.action_move_out_invoice_type"
+        )
+        action[
+            "domain"
+        ] = "[('payment_state_with_factor', '=', 'to_transfer_to_factor')]"
         return action
 
     def action_open_factor_to_pay(self):
-        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
-        action["domain"] = "[('payment_state_with_factor', '=', 'transferred_to_factor')]"
+        action = self.env["ir.actions.actions"]._for_xml_id(
+            "account.action_move_out_invoice_type"
+        )
+        action[
+            "domain"
+        ] = "[('payment_state_with_factor', '=', 'transferred_to_factor')]"
         return action
 
     def action_open_factor_holdback(self):
-        action = self.env["ir.actions.actions"]._for_xml_id("account.action_account_moves_all")
-        action["domain"] = "[('full_reconcile_id', '=', False), ('account_id', 'in', %s)]" % (
-            (self.factor_holdback_account_id.id, self.factor_limit_holdback_account_id.id),
+        action = self.env["ir.actions.actions"]._for_xml_id(
+            "account.action_account_moves_all"
+        )
+        action[
+            "domain"
+        ] = "[('full_reconcile_id', '=', False), ('account_id', 'in', %s)]" % (
+            (
+                self.factor_holdback_account_id.id,
+                self.factor_limit_holdback_account_id.id,
+            ),
         )
         return action

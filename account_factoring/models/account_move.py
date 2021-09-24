@@ -31,8 +31,12 @@ class AccountMove(models.Model):
         compute="_compute_payment_state_with_factor",
     )
 
-    factor_transfer_id = fields.Many2one("account.move", compute="_compute_factor_transfer_id")
-    factor_payment_id = fields.Many2one("account.move", compute="_compute_factor_payment_id")
+    factor_transfer_id = fields.Many2one(
+        "account.move", compute="_compute_factor_transfer_id"
+    )
+    factor_payment_id = fields.Many2one(
+        "account.move", compute="_compute_factor_payment_id"
+    )
 
     @api.depends("payment_state", "payment_mode_id")
     def _compute_payment_state_with_factor(self):
@@ -43,7 +47,7 @@ class AccountMove(models.Model):
                 and move.payment_mode_id.fixed_journal_id
                 and move.payment_mode_id.fixed_journal_id.is_factor
             ):
-                if move.payment_state == "not_paid" and move.state != 'cancel':
+                if move.payment_state == "not_paid" and move.state != "cancel":
                     move.payment_state_with_factor = "to_transfer_to_factor"
                 elif move.payment_state == "paid":
                     move.payment_state_with_factor = "transferred_to_factor"
@@ -59,8 +63,7 @@ class AccountMove(models.Model):
                 .mapped("full_reconcile_id")
                 .reconciled_line_ids.mapped("move_id")
                 .filtered(
-                    lambda move: move.id not in self.ids
-                    and move.state != 'cancel'
+                    lambda move: move.id not in self.ids and move.state != "cancel"
                 )
             )
             if factor_transfers:
@@ -71,13 +74,16 @@ class AccountMove(models.Model):
     def _compute_factor_payment_id(self):
         for inv in self:
             factor_payments = (
-                inv.factor_transfer_id.mapped("line_ids").filtered(
-                    lambda line: line.account_id == inv.factor_transfer_id.journal_id.factor_holdback_account_id
-                ).mapped("full_reconcile_id")
+                inv.factor_transfer_id.mapped("line_ids")
+                .filtered(
+                    lambda line: line.account_id
+                    == inv.factor_transfer_id.journal_id.factor_holdback_account_id
+                )
+                .mapped("full_reconcile_id")
                 .reconciled_line_ids.mapped("move_id")
                 .filtered(
                     lambda move: move.id not in self.factor_transfer_id.ids
-                    and move.state != 'cancel'
+                    and move.state != "cancel"
                 )
             )
             if factor_payments:
@@ -116,25 +122,28 @@ class AccountMove(models.Model):
         lines = self.factor_transfer_id.line_ids.filtered(
             lambda line: float_compare(line.debit, 0.0, precision_rounding=0.01) > 0
             and line.account_id.id
-            in (
-                self.factor_transfer_id.journal_id.factor_holdback_account_id.id,
-            )
+            in (self.factor_transfer_id.journal_id.factor_holdback_account_id.id,)
             and not line.reconciled
         )
         # getting the % holdback this way ensure it can easily be reconciled
         invoice_holdback = sum(lines.mapped("debit"))
-        initial_balance_journal = lines[0].move_id.with_context(
-            {"compute_factor_partner": self.partner_id}
-        ).journal_id
-
+        initial_balance_journal = (
+            lines[0]
+            .move_id.with_context({"compute_factor_partner": self.partner_id})
+            .journal_id
+        )
 
         dg = self.currency_id.rounding
-        initial_balance_journal = lines[0].move_id.with_context(
-            {"compute_factor_partner": self.partner_id}
-        ).journal_id
-        customer_balance = initial_balance_journal.factor_customer_credit - self.amount_total # DIFFERENT FROM account_payment !!
+        initial_balance_journal = (
+            lines[0]
+            .move_id.with_context({"compute_factor_partner": self.partner_id})
+            .journal_id
+        )
+        customer_balance = (
+            initial_balance_journal.factor_customer_credit - self.amount_total
+        )  # DIFFERENT FROM account_payment !!
         initial_holdback = initial_balance_journal.factor_holdback_balance
-        initial_limit_holdback= initial_balance_journal.factor_limit_holdback_balance
+        initial_limit_holdback = initial_balance_journal.factor_limit_holdback_balance
 
         # REA = encours - limit - holback_balance - limit_holdback_balance
         limit_holdback = self.currency_id.round(
@@ -191,7 +200,6 @@ class AccountMove(models.Model):
                 )
             )
 
-
         for line in lines:
             payment_vals_list.append(
                 (
@@ -228,53 +236,42 @@ class AccountMove(models.Model):
             ("credit", ">", 0),
         ]
         payment_lines = payment.line_ids.filtered_domain(domain)
-        (payment_lines + lines).filtered_domain([
-            (
-                "account_id",
-                "=",
-                self.factor_transfer_id.journal_id.factor_holdback_account_id.id
-            ),
-            (
-                "reconciled",
-                "=",
-                False
-            )
-        ]).with_context({"skip_account_move_synchronization": True}).reconcile()
-
+        (payment_lines + lines).filtered_domain(
+            [
+                (
+                    "account_id",
+                    "=",
+                    self.factor_transfer_id.journal_id.factor_holdback_account_id.id,
+                ),
+                ("reconciled", "=", False),
+            ]
+        ).with_context({"skip_account_move_synchronization": True}).reconcile()
 
         # now we try to reconcile limit holdback lines:
         self.env.cr.commit()  # required to test if imit_holdback is zero later
         self.env["account.journal"].flush(["factor_limit_holdback_balance"])
-        balance_journal = lines[0].move_id.with_context(
-            {"compute_factor_partner": self.partner_id}
-        ).journal_id
+        balance_journal = (
+            lines[0]
+            .move_id.with_context({"compute_factor_partner": self.partner_id})
+            .journal_id
+        )
         if float_is_zero(
-            balance_journal.factor_limit_holdback_balance,
-            0.0,
-            precision_rounding=dg
+            balance_journal.factor_limit_holdback_balance, 0.0, precision_rounding=dg
         ):
-            open_limit_holdback_lines = self.env['account.move.line'].search([
-                (
-                    "account_id",
-                    "=",
-                    self.factor_transfer_id.journal_id.factor_limit_holdback_account_id.id
-                ),
-                (
-                    "partner_id",
-                    "=",
-                    self.partner_id.id
-                ),
-                (
-                    "parent_state",
-                    "=",
-                    "posted"
-                ),
-                (
-                    "reconciled",
-                    "=",
-                    False
-                )
-            ])
-            open_limit_holdback_lines.with_context({"skip_account_move_synchronization": True}).reconcile()
+            open_limit_holdback_lines = self.env["account.move.line"].search(
+                [
+                    (
+                        "account_id",
+                        "=",
+                        self.factor_transfer_id.journal_id.factor_limit_holdback_account_id.id,
+                    ),
+                    ("partner_id", "=", self.partner_id.id),
+                    ("parent_state", "=", "posted"),
+                    ("reconciled", "=", False),
+                ]
+            )
+            open_limit_holdback_lines.with_context(
+                {"skip_account_move_synchronization": True}
+            ).reconcile()
 
         self.payment_state_with_factor = "factor_paid"

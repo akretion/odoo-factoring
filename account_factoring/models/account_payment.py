@@ -53,7 +53,7 @@ class AccountPayment(models.Model):
         ).journal_id
         customer_balance = initial_balance_journal.factor_customer_credit
         initial_holdback = initial_balance_journal.factor_holdback_balance
-        initial_limit_holdback= initial_balance_journal.factor_limit_holdback_balance
+        initial_limit_holdback = initial_balance_journal.factor_limit_holdback_balance
 
         limit_holdback = self.currency_id.round(
             customer_balance
@@ -95,12 +95,14 @@ class AccountPayment(models.Model):
                     "account_id": self.journal_id.default_account_id.id,
                 }
             )
-        elif float_compare(limit_holdback + remaining_amount, 0, precision_rounding=dg) > 0:
+        elif (
+            float_compare(limit_holdback + remaining_amount, 0, precision_rounding=dg)
+            > 0
+        ):
             # the factor customer balance is such that all money is holded back.
             # (remaining_amount is negative)
             # now we should make sure that we don't holdback more than the max possible:
             limit_holdback += remaining_amount
-
 
         if float_compare(factor_fee_amount, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
@@ -112,9 +114,7 @@ class AccountPayment(models.Model):
                     "currency_id": original_liquidity_line["currency_id"],
                     "debit": factor_fee_amount,
                     "credit": 0.0,
-                    "partner_id": original_liquidity_line[
-                        "partner_id"
-                    ],
+                    "partner_id": original_liquidity_line["partner_id"],
                     "account_id": self.journal_id.factor_fee_account_id.id,
                 }
             )
@@ -134,9 +134,7 @@ class AccountPayment(models.Model):
                     "currency_id": original_liquidity_line["currency_id"],
                     "debit": factor_fee_tax_amount,
                     "credit": 0.0,
-                    "partner_id": original_liquidity_line[
-                        "partner_id"
-                    ],
+                    "partner_id": original_liquidity_line["partner_id"],
                     "account_id": fee_tax_account.id,
                 }
             )
@@ -155,9 +153,7 @@ class AccountPayment(models.Model):
                     "currency_id": original_liquidity_line["currency_id"],
                     "debit": invoice_holdback,
                     "credit": 0.0,
-                    "partner_id": original_liquidity_line[
-                        "partner_id"
-                    ],
+                    "partner_id": original_liquidity_line["partner_id"],
                     "account_id": self.journal_id.factor_holdback_account_id.id,
                 }
             )
@@ -172,9 +168,7 @@ class AccountPayment(models.Model):
                     "currency_id": original_liquidity_line["currency_id"],
                     "debit": limit_holdback,
                     "credit": 0.0,
-                    "partner_id": original_liquidity_line[
-                        "partner_id"
-                    ],
+                    "partner_id": original_liquidity_line["partner_id"],
                     "account_id": self.journal_id.factor_limit_holdback_account_id.id,
                 }
             )
@@ -205,17 +199,19 @@ class AccountPayment(models.Model):
             # because factor accounts are not receivable nor payable.
             context_dict = {}
             factor_accounts = set()
-            for journal in self.env['account.journal'].search([
-                ("is_factor", "=", True)
-            ]):
+            for journal in self.env["account.journal"].search(
+                [("is_factor", "=", True)]
+            ):
                 factor_accounts.add(journal.default_account_id)
                 factor_accounts.add(journal.factor_holdback_account_id)
             for pay in self:
                 for line in pay.line_ids:
-                    if line.journal_id.type == "bank" and line.account_id in factor_accounts:
-                        context_dict = {'skip_account_move_synchronization': True}
+                    if (
+                        line.journal_id.type == "bank"
+                        and line.account_id in factor_accounts
+                    ):
+                        context_dict = {"skip_account_move_synchronization": True}
                         break
             return super(
-                AccountPayment,
-                self.with_context(context_dict)
+                AccountPayment, self.with_context(context_dict)
             )._synchronize_from_moves(changed_fields)
