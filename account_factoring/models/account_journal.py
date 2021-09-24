@@ -139,3 +139,20 @@ class AccountJournal(models.Model):
                 journal.default_account_type = self.env.ref(
                     "account.data_account_type_current_liabilities"
                 ).id
+
+    def action_open_factor_to_transfer(self):
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
+        action["domain"] = "[('payment_state_with_factor', '=', 'to_transfer_to_factor')]"
+        return action
+
+    def action_open_factor_to_pay(self):
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
+        action["domain"] = "[('payment_state_with_factor', '=', 'transferred_to_factor')]"
+        return action
+
+    def action_open_factor_holdback(self):
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_account_moves_all")
+        action["domain"] = "[('full_reconcile_id', '=', False), ('account_id', 'in', %s)]" % (
+            (self.factor_holdback_account_id.id, self.factor_limit_holdback_account_id.id),
+        )
+        return action

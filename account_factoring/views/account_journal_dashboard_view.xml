@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="account_journal_dashboard_kanban_view" model="ir.ui.view">
+            <field name="name">account.journal.inherit.dashboard.kanban</field>
+            <field name="model">account.journal</field>
+            <field
+                name="inherit_id"
+                ref="account.account_journal_dashboard_kanban_view"
+            />
+            <field name="arch" type="xml">
+                <xpath
+                    expr="//kanban/templates//div[@id='dashboard_bank_cash_right']"
+                    position="inside"
+                >
+                    <div class="row">
+                        <div class="col overflow-hidden text-left">
+                                <a type="object" name="action_open_factor_holdback">Holdback</a>
+                        </div>
+                        <div class="col-auto text-right">
+                            <span>
+                                <t t-esc="dashboard.total_holdback" />
+                            </span>
+                        </div>
+                    </div>
+                    <t t-if="dashboard.number_to_transfer > 0">
+                        <div class="row">
+                            <div class="col overflow-hidden text-left">
+                                <a type="object" name="action_open_factor_to_transfer">
+                                    <t t-esc="dashboard.number_to_transfer" /> to transfer</a>
+                            </div>
+                            <div class="col-auto text-right">
+                                <span>
+                                    <t t-esc="dashboard.sum_to_transfer" />
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-if="dashboard.number_waiting_payment > 0">
+                        <div class="row">
+                            <div class="col overflow-hidden text-left">
+                                <a type="object" name="action_open_factor_to_pay">
+                                    <t t-esc="dashboard.number_waiting_payment" /> waiting payment</a>
+                            </div>
+                            <div class="col-auto text-right">
+                                <span>
+                                    <t t-esc="dashboard.sum_waiting_payment" />
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

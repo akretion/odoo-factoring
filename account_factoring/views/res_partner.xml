@@ -8,12 +8,15 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="account.view_partner_property_form" />
         <field name="arch" type="xml">
-            <group name="accounting_entries" position="inside">
-                <field name="factor_credit_limit" />
+            <group name="accounting_entries" position="after" >
+                <group string="Factoring" name="factoring" >
+                    <field name="factor_credit_limit" />
+                    <field name="factor_credit" />
+                    <field name="factor_holdback" />
+                    <button string="Holdback Details..." name="open_customer_holdback" type="object" class="oe_stat_button" />
+                </group>
             </group>
         </field>
     </record>
-
-
 
 </odoo>

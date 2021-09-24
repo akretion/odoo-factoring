@@ -1,7 +1,7 @@
 Create a new Journal
 ====================
 
-Example in France fro FactoFrance:
+Example in France for FactoFrance:
 
 1. create a new account journal of type Bank with the Is Factor checkbox checked.
 2. Define a code like FACTO. Save (yes you should save before filling the next information).
@@ -46,10 +46,42 @@ Bank statements
 
 
 You should use standard bank statements to register the money transfer from the factor account to your bank account.
-The only difference is that you will reconcile factor bank statement lines not with a payable or a receivable but with
-using the miscellaneous tab instead. You should 1st match against the factor account.
+Define a reconciliation model for creating a counterpart of 100% of your bank statement line in your factor account
+and use it every time you need to reconcile a factor transfer in your bank statement.
 
-But in the case where the amount holded back by the factor is inferior to what was expected,
-then you can select the appropriate lines from the limit holdback account for reconciliation.
+
+Note on reconciliations
+=======================
+
+Money made available can be related to several invoices and holdback releases and if you fail to simulate the factor
+behavior exactly, chances are you'll have small diference between the amount available in Odoo and at your factor.
+That's why we assume not using reconciliation for the money transfered from the factor to the bank.
+
+On the other hand, we reconcile the holdback and holdback releases in order to keep the holdback history clean
+and easy to inspect. Now these reconciliations can have more than 2 account.move.lines.
+
+Hence even if we don't simulate exactly the holdback money, once the customer paid everything to the factor the
+holdback amounts are reconciled and errors don't accumulate.
+
+
+Note on factor API
+==================
+
+This module is factor agnostic (but tested in France with FactoFrance). It tries to simulate what the factor does
+but it doesn't integrate with any factor API. This could be done in extension modules to:
+
+* automate the invoice transfer to the factor
+* mark invoices paid to the factor automatically
+* provide the exact amount available and holdback amounts.
+
+
+Note on tests
+=============
+
+Akretion had only 1 customer for this initial development and tests are not easy because of all the set up and
+because it depends on a specific chart of accounts. So so far this module was tested manually with this scenario
+https://docs.google.com/spreadsheets/d/1bxi1J3XgExy2fX74ixjn52dX1xx1cqH6X-WEhyeXarU/edit?usp=sharing
+were taxes and fees were neglected on purpose.
+
 
 

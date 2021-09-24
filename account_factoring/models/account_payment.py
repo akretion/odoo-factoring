@@ -42,43 +42,44 @@ class AccountPayment(models.Model):
             factor_fee_amount * self.journal_id.factor_tax_id.amount / 100.0
         )
 
-        factor_holdback_amount = self.currency_id.round(
+        invoice_holdback = self.currency_id.round(
             amount * self.journal_id.factor_holdback_percent / 100.0
         )
+
+        dg = self.currency_id.rounding
 
         initial_balance_journal = self.with_context(
             {"compute_factor_partner": self.partner_id}
         ).journal_id
         customer_balance = initial_balance_journal.factor_customer_credit
-        initial_customer_hodlback_balance = initial_balance_journal.factor_holdback_balance
-        initial_customer_limit_hodlback_balance = initial_balance_journal.factor_limit_holdback_balance
+        initial_holdback = initial_balance_journal.factor_holdback_balance
+        initial_limit_holdback= initial_balance_journal.factor_limit_holdback_balance
 
-        # REA = encours - limit - holback_balance - limit_holdback_balance
-        factor_limit_holdback_amount = self.currency_id.round(
+        limit_holdback = self.currency_id.round(
             customer_balance
-            #+ original_liquidity_line["debit"]
             - self.partner_id.factor_credit_limit
-            - initial_customer_hodlback_balance
-            - factor_holdback_amount
-            - initial_customer_limit_hodlback_balance
+            - initial_holdback
+            - invoice_holdback
+            - initial_limit_holdback
+            - factor_fee_amount
+            - factor_fee_tax_amount
         )
 
-        if factor_limit_holdback_amount < 0:
-            factor_limit_holdback_amount = 0
+        if float_compare(limit_holdback, 0.0, precision_rounding=dg) < 0:
+            limit_holdback = 0
 
-        # TODO limit_holdback_amount can also be 0 under other conditions
+        # TODO limit_holdback can also be 0 under other conditions
         # such as customer_balance < 40% of total factor_balance...
 
         remaining_amount = self.currency_id.round(
             original_liquidity_line["debit"]
             - factor_fee_amount
             - factor_fee_tax_amount
-            - factor_holdback_amount
-            - factor_limit_holdback_amount
+            - invoice_holdback
+            - limit_holdback
         )
 
         liquidity_lines = []
-        dg = self.currency_id.rounding
 
         if float_compare(remaining_amount, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
@@ -94,15 +95,11 @@ class AccountPayment(models.Model):
                     "account_id": self.journal_id.default_account_id.id,
                 }
             )
-        elif float_compare(
-            factor_limit_holdback_amount + remaining_amount,
-            0,
-            precision_rounding=dg
-        ) > 0:
+        elif float_compare(limit_holdback + remaining_amount, 0, precision_rounding=dg) > 0:
             # the factor customer balance is such that all money is holded back.
             # (remaining_amount is negative)
             # now we should make sure that we don't holdback more than the max possible:
-            factor_limit_holdback_amount = factor_limit_holdback_amount + remaining_amount
+            limit_holdback += remaining_amount
 
 
         if float_compare(factor_fee_amount, 0.0, precision_rounding=dg) > 0:
@@ -131,7 +128,7 @@ class AccountPayment(models.Model):
             liquidity_lines.append(  # TODO fill tax_tag_ids?
                 {
                     "name": "%s - %s"
-                    % (_("Tax on Factor Fee"), original_liquidity_line["name"]),
+                    % (_("Factor Fee Tax"), original_liquidity_line["name"]),
                     "date_maturity": original_liquidity_line["date_maturity"],
                     "amount_currency": factor_fee_tax_amount,
                     "currency_id": original_liquidity_line["currency_id"],
@@ -144,20 +141,19 @@ class AccountPayment(models.Model):
                 }
             )
 
-        if float_compare(factor_holdback_amount, 0.0, precision_rounding=dg) > 0:
+        if float_compare(invoice_holdback, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
                 {
-                    "name": "%s %s %% %s - %s"
+                    "name": "%s%% %s - %s"
                     % (
-                        _("Factor"),
                         self.journal_id.factor_holdback_percent,
                         _("Holdback"),
                         original_liquidity_line["name"],
                     ),
                     "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": factor_holdback_amount,
+                    "amount_currency": invoice_holdback,
                     "currency_id": original_liquidity_line["currency_id"],
-                    "debit": factor_holdback_amount,
+                    "debit": invoice_holdback,
                     "credit": 0.0,
                     "partner_id": original_liquidity_line[
                         "partner_id"
@@ -166,15 +162,15 @@ class AccountPayment(models.Model):
                 }
             )
 
-        if float_compare(factor_limit_holdback_amount, 0.0, precision_rounding=dg) > 0:
+        if float_compare(limit_holdback, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
                 {
                     "name": "%s - %s"
-                    % (_("Factor Limit Holdback"), original_liquidity_line["name"]),
+                    % (_("Limit Holdback"), original_liquidity_line["name"]),
                     "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": factor_limit_holdback_amount,
+                    "amount_currency": limit_holdback,
                     "currency_id": original_liquidity_line["currency_id"],
-                    "debit": factor_limit_holdback_amount,
+                    "debit": limit_holdback,
                     "credit": 0.0,
                     "partner_id": original_liquidity_line[
                         "partner_id"
