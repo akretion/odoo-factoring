@@ -13,19 +13,21 @@
                     expr="//kanban/templates//div[@id='dashboard_bank_cash_right']"
                     position="inside"
                 >
-                    <div class="row">
-                        <div class="col overflow-hidden text-left">
-                                <a
-                                type="object"
-                                name="action_open_factor_holdback"
-                            >Holdback</a>
+                    <t t-if="dashboard.is_factor">
+                        <div class="row">
+                            <div class="col overflow-hidden text-left">
+                                    <a
+                                    type="object"
+                                    name="action_open_factor_holdback"
+                                >Holdback</a>
+                            </div>
+                            <div class="col-auto text-right">
+                                <span>
+                                    <t t-esc="dashboard.total_holdback" />
+                                </span>
+                            </div>
                         </div>
-                        <div class="col-auto text-right">
-                            <span>
-                                <t t-esc="dashboard.total_holdback" />
-                            </span>
-                        </div>
-                    </div>
+                    </t>
                     <t t-if="dashboard.number_to_transfer > 0">
                         <div class="row">
                             <div class="col overflow-hidden text-left">

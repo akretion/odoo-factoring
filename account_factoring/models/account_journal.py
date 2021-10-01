@@ -282,6 +282,7 @@ class AccountJournal(models.Model):
             sum_waiting_payment = 0
             total_holdback = 0
         res.update({
+            'is_factor': self.is_factor,
             'total_holdback': formatLang(self.env, currency.round(total_holdback) + 0.0, currency_obj=currency),
             'number_to_transfer': number_to_transfer,
             'sum_to_transfer': formatLang(self.env, currency.round(sum_to_transfer) + 0.0, currency_obj=currency),
