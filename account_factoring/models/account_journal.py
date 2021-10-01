@@ -130,12 +130,13 @@ class AccountJournal(models.Model):
                 )["balance"]
             else:
                 journal.factor_limit_holdback_balance = 0
-            if partner:
+            if (
+                partner
+                and result.get(partner.property_account_receivable_id.id)
+            ):
                 journal.factor_customer_credit = result.get(
-                    partner.property_account_receivable_id.id
-                )[
-                    "debit"
-                ]  # debit of customer invoices and != 'factor_paid'
+                    partner.property_account_receivable_id.id,
+                )["debit"]
             else:
                 journal.factor_customer_credit = 0
 
