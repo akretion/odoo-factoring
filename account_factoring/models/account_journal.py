@@ -2,6 +2,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 import json
+import random
 from babel.dates import format_datetime, format_date
 from datetime import datetime, timedelta
 from odoo import api, fields, models
