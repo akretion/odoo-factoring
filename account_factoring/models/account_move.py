@@ -32,10 +32,14 @@ class AccountMove(models.Model):
     )
 
     factor_transfer_id = fields.Many2one(
-        "account.move", compute="_compute_factor_transfer_id"
+        "account.move",
+        help="Credit transfer to the Factor",
+        compute="_compute_factor_transfer_id"
     )
     factor_payment_id = fields.Many2one(
-        "account.move", compute="_compute_factor_payment_id"
+        "account.move",
+        help="Move with the effect of the payment from the Customer to the Factor",
+        compute="_compute_factor_payment_id"
     )
 
     @api.depends("payment_state", "payment_mode_id")
@@ -90,6 +94,24 @@ class AccountMove(models.Model):
                 inv.factor_payment_id = factor_payments[0]
             else:
                 inv.factor_payment_id = False
+
+    def button_draft(self):
+        "Will cancel any related factor transfer or related factor payment"
+        to_cancel_factor = self.env["account.move"]
+        for move in self:
+            if (
+                move.move_type == "out_invoice"
+                and move.payment_mode_id
+                and move.payment_mode_id.fixed_journal_id
+                and move.payment_mode_id.fixed_journal_id.is_factor
+            ):
+                to_cancel_factor += move.factor_payment_id
+                to_cancel_factor += move.factor_transfer_id
+        res = super().button_draft()  # 1st unreconcile to enable cancel
+        if to_cancel_factor:  # avoids loop with empty set
+            to_cancel_factor.with_context().button_draft()
+            to_cancel_factor.with_context().button_cancel()
+        return res
 
     def button_transfer_to_factor(self):
         """
