@@ -76,6 +76,8 @@ class AccountJournal(models.Model):
             + self.mapped("factor_holdback_account_id").ids
             + self.mapped("factor_limit_holdback_account_id").ids
         )
+        if not account_ids:
+            return
         payment_modes = self.env["account.payment.mode"].search(
             [("fixed_journal_id", "in", self.ids)]
         )
