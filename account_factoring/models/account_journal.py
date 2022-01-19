@@ -3,7 +3,7 @@
 
 import json
 import random
-from babel.dates import format_datetime, format_date
+from babel.dates import format_date
 from datetime import datetime, timedelta
 from odoo import api, fields, models
 from odoo.release import version
@@ -69,6 +69,8 @@ class AccountJournal(models.Model):
         self.factor_debit = 0
         self.factor_credit = 0
         self.factor_balance = 0
+        self.factor_holdback_balance = 0
+        self.factor_limit_holdback_balance = 0
         if not self.ids:
             return
         account_ids = (
