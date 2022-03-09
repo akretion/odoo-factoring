@@ -1,18 +1,104 @@
 # Copyright (C) 2021 - TODAY Raphaël Valyi - Akretion
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from odoo import _, models
+from odoo import _, api, models
+from odoo.exceptions import UserError
 from odoo.tools import float_compare
 
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
+    def get_factor_statement(self):
+        self.ensure_one()
+        existing_statements = self.env['account.bank.statement'].search([
+            ("state", "=", "draft"),
+            ("journal_id", "=", self.journal_id.id),
+        ])
+        if existing_statements:
+            return existing_statements[0]
+        else:
+            return self.env['account.bank.statement'].create({
+                'journal_id': self.journal_id.id,
+            })
+
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        payment = super().create(vals_list)
+        if payment.journal_id.is_factor:
+            if payment.payment_type == "inbound":  # credit transfer
+                pass  # TODO
+                # factor_remittance_move = ...
+                # line_vals = self._inject_factor_credit_transfer_lines(line_vals)
+            elif payment.payment_type == "outbound":  # refund transfer
+                line_ids = payment.move_id.line_ids
+                suspense_lines = line_ids.filtered_domain([(
+                    "account_id",
+                    "=",
+                    payment.journal_id.payment_credit_account_id.id
+                )])
+                if not suspense_lines:
+                   raise UserError(_(
+                       "You should define an outgoing payment account "
+                       "in your factor journal!"
+                   ))
+                suspense_line = suspense_lines[0]
+                suspense_counterpart_line = {
+                    'name': suspense_line.name,
+                    'date_maturity': suspense_line.date_maturity,
+                    'amount_currency': suspense_line.amount_currency,
+                    'currency_id': suspense_line.currency_id.id,
+                    "debit": suspense_line.credit,
+                    "credit": suspense_line.debit,
+                    'partner_id': suspense_line.partner_id.id ,
+                    'account_id': suspense_line.account_id.id,
+                }
+                factor_refund_line = {
+                    'name': suspense_line.name,
+                    'date_maturity': suspense_line.date_maturity,
+                    'amount_currency': suspense_line.amount_currency,
+                    'currency_id': suspense_line.currency_id.id,
+                    "debit": suspense_line.debit,
+                    "credit": suspense_line.credit,
+                    'partner_id': suspense_line.partner_id.id,
+                    'account_id': payment.journal_id.default_account_id.id,
+                }
+                line_vals = [(0, 0, suspense_counterpart_line), (0, 0, factor_refund_line)]
+                print("LLLL", line_vals)
+                factor_refund_detail = payment.move_id.copy({
+                    "line_ids": line_vals,
+                    # TODO statement_id
+                })
+#                factor_refund_detail._post()
+                statement = payment.get_factor_statement()
+                statement_line = self.env["account.bank.statement.line"].create({
+                    "statement_id": statement.id,
+                    "move_id": factor_refund_detail.id,
+                    "payment_ref": suspense_line.name,
+                    "partner_id": suspense_line.partner_id.id,
+                })
+                suspense_counterpart_lines = factor_refund_detail.line_ids.filtered_domain([(
+                    "account_id",
+                    "=",
+                    payment.journal_id.payment_credit_account_id.id
+                )])
+#                (suspense_lines + suspense_counterpart_lines).reconcile()
+
+                print("AAAAAAAAA", factor_refund_detail)
+            a=x/0
+        return payment
+
+
     def _prepare_move_line_default_vals(self, write_off_line_vals=None):
         self.ensure_one()
         line_vals = super()._prepare_move_line_default_vals(write_off_line_vals)
-        if self.payment_type == "inbound" and self.journal_id.is_factor:
-            line_vals = self._inject_factor_credit_transfer_lines(line_vals)
+        print("TTTTTTT", self.payment_type)
+        if self.journal_id.is_factor:
+            if self.payment_type == "inbound":  # credit transfer
+                line_vals = self._inject_factor_credit_transfer_lines(line_vals)
+            elif self.payment_type == "outbound":  # refund transfer
+                print(line_vals)
         return line_vals
 
     def _inject_factor_credit_transfer_lines(self, line_vals):

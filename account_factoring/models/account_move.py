@@ -8,6 +8,12 @@ from odoo.tools import float_compare, float_is_zero
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    @api.model
+    def _get_invoice_in_payment_state(self):
+        # OVERRIDE to enable the 'in_payment' state on invoices.
+        # TODO remove?
+        return 'in_payment'
+
     # new state capturing the factoring state.
     # we avoid touching the original payment_state to avoid side effects
     payment_state_with_factor = fields.Selection(
@@ -46,14 +52,14 @@ class AccountMove(models.Model):
     def _compute_payment_state_with_factor(self):
         for move in self:
             if (
-                move.move_type == "out_invoice"
+                move.move_type in ("out_invoice", "out_refund")
                 and move.payment_mode_id
                 and move.payment_mode_id.fixed_journal_id
                 and move.payment_mode_id.fixed_journal_id.is_factor
             ):
                 if move.payment_state == "not_paid" and move.state != "cancel":
                     move.payment_state_with_factor = "to_transfer_to_factor"
-                elif move.payment_state == "paid":
+                elif move.payment_state in ("in_payment", "paid"):
                     move.payment_state_with_factor = "transferred_to_factor"
                 else:
                     move.payment_state_with_factor = move.payment_state
@@ -62,16 +68,24 @@ class AccountMove(models.Model):
 
     def _compute_factor_transfer_id(self):
         for inv in self:
-            factor_transfers = (
-                inv.mapped("line_ids")
-                .mapped("full_reconcile_id")
-                .reconciled_line_ids.mapped("move_id")
-                .filtered(
-                    lambda move: move.id not in self.ids and move.state != "cancel"
+            if (
+                inv.move_type in ("out_invoice", "out_refund")
+                and inv.payment_mode_id
+                and inv.payment_mode_id.fixed_journal_id
+                and inv.payment_mode_id.fixed_journal_id.is_factor
+            ):
+                factor_transfers = (
+                    inv.mapped("line_ids")
+                    .mapped("full_reconcile_id")
+                    .reconciled_line_ids.mapped("move_id")
+                    .filtered(
+                        lambda move: move.id not in self.ids and move.state != "cancel"
+                    )
                 )
-            )
-            if factor_transfers:
-                inv.factor_transfer_id = factor_transfers[0]
+                if factor_transfers:
+                    inv.factor_transfer_id = factor_transfers[0]
+                else:
+                    inv.factor_transfer_id = False
             else:
                 inv.factor_transfer_id = False
 

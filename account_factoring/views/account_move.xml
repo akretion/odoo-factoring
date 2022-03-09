@@ -36,7 +36,7 @@
                     id="factoring"
                     string="Factoring"
                     name="factoring"
-                    attrs="{'invisible': [('payment_mode_id', '=', False)]}"
+                    attrs="{'invisible': [('factor_transfer_id', '=', False)]}"
                 >
                     <group id="factoring_group">
                         <group>
