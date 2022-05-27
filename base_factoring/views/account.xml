@@ -1,0 +1,11 @@
+<odoo>
+
+
+    <menuitem
+        id="factoring_menu"
+        parent="account.menu_finance_entries"
+        sequence="50"
+        name="Factoring"/>
+
+
+</odoo>
