@@ -1,0 +1,88 @@
+<odoo>
+
+<record id="subrogation_receipt_form" model="ir.ui.view">
+    <field name="model">subrogation.receipt</field>
+    <field name="arch" type="xml">
+        <form>
+            <header>
+                <field name="state" widget="statusbar"/>
+            </header>
+            <sheet>
+                <widget
+                    name="web_ribbon"
+                    title="Archived"
+                    bg_color="bg-danger"
+                    attrs="{'invisible': [('active', '=', True)]}"
+                        />
+                <field name="active" invisible="1" />
+                <h1>
+                    <!-- <label string=""/> -->
+                </h1>
+                <group name="main">
+                    <group name="left">
+                        <field name="factoring_journal_id"/>
+                        <field name="holdback_amount"/>
+                    </group>
+                    <group name="right">
+                        <separator string="Expenses" colspan="2"/>
+                        <field name="expense_untaxed_amount" string="Untaxed Amount"/>
+                        <field name="expense_tax_amount" string="Tax Amount"/>
+                    </group>
+                </group>
+                <group name="o2m" col="1">
+                    <separator string="Moves" />
+                    <field name="move_ids" nolabel="1"/>
+                </group>
+            </sheet>
+            <div class="oe_chatter">
+                <field name="message_follower_ids" widget="mail_followers"/>
+                <field name="activity_ids" widget="mail_activity"/>
+                <field name="message_ids" widget="mail_thread"
+                    options="{'post_refresh': 'recipients'}"/>
+            </div>
+        </form>
+    </field>
+</record>
+
+
+<record id='subrogation_receipt_tree' model='ir.ui.view'>
+    <field name='model'>subrogation.receipt</field>
+    <field name='arch' type='xml'>
+        <tree>
+            <field name="factoring_journal_id"/>
+            <field name="expense_untaxed_amount"/>
+            <field name="expense_tax_amount"/>
+            <field name="holdback_amount"/>
+            <field name="state"/>
+            <field name="active"/>
+        </tree>
+    </field>
+</record>
+
+<record id="subrogation_receipt_search" model="ir.ui.view">
+    <field name="model">subrogation.receipt</field>
+    <field name="arch" type="xml">
+        <search>
+            <filter name="factoring_journal_id"/>
+            <filter name="expense_untaxed_amount"/>
+            <filter name="expense_tax_amount"/>
+            <filter name="holdback_amount"/>
+            <filter name="state"/>
+        </search>
+    </field>
+</record>
+            <!-- <filter name="" string="" domain="[]" context="{'group_by' : ''}" -->/>
+
+<record id="subrogation_receipt_action" model="ir.actions.act_window">
+    <field name="name">Subrogation Receipt</field>
+    <field name="res_model">subrogation.receipt</field>
+    <field name="view_mode">tree,form</field>
+</record>
+
+
+<menuitem
+    id="subrogation_receipt_menu"
+    parent="base_factoring.factoring_menu"
+    action="subrogation_receipt_action"/>
+
+</odoo>
