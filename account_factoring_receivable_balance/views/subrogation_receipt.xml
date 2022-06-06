@@ -20,10 +20,13 @@
                 </h1>
                 <group name="main">
                     <group name="left">
-                        <field name="factoring_journal_id"/>
-                        <field name="holdback_amount"/>
+                        <field name="factor_journal_id"/>
+                        <field name="factor_type"/>
+                        <field name="date"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                     <group name="right">
+                        <field name="holdback_amount"/>
                         <separator string="Expenses" colspan="2"/>
                         <field name="expense_untaxed_amount" string="Untaxed Amount"/>
                         <field name="expense_tax_amount" string="Tax Amount"/>
@@ -49,7 +52,7 @@
     <field name='model'>subrogation.receipt</field>
     <field name='arch' type='xml'>
         <tree>
-            <field name="factoring_journal_id"/>
+            <field name="factor_journal_id"/>
             <field name="expense_untaxed_amount"/>
             <field name="expense_tax_amount"/>
             <field name="holdback_amount"/>
@@ -63,7 +66,7 @@
     <field name="model">subrogation.receipt</field>
     <field name="arch" type="xml">
         <search>
-            <filter name="factoring_journal_id"/>
+            <filter name="factor_journal_id"/>
             <filter name="expense_untaxed_amount"/>
             <filter name="expense_tax_amount"/>
             <filter name="holdback_amount"/>

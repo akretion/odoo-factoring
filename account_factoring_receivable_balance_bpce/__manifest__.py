@@ -2,7 +2,7 @@
 # © 2022 Alexis DE LATTRE @ Akretion
 
 {
-    "name": "Base Factoring",
+    "name": "Account Factoring Receivable Balance BPCE",
     "version": "15.0.1.0.0",
     "category": "Accounting",
     "license": "AGPL-3",
@@ -11,10 +11,11 @@
         "alexis-via",
     ],
     "depends": [
-        "account",
+        "account_factoring_receivable_balance",
+        "l10n_fr",
     ],
     "data": [
-        "views/account.xml",
+        "data/action.xml",
         "views/partner.xml",
         "views/company.xml",
     ],

@@ -10,6 +10,9 @@ from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lan
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
+    factor_type = fields.Selection(
+        selection_add=[("bpce", "BPCE")], ondelete={"bpce": "set null"}
+    )
     factoring_receivable_account_id = fields.Many2one(
         comodel_name="account.account", string="Receivable Account"
     )
@@ -25,3 +28,11 @@ class AccountJournal(models.Model):
     factoring_expense_account_id = fields.Many2one(
         comodel_name="account.account", string="Expense Account"
     )
+
+    _sql_constraints = [
+        (
+            "currency_factor_company_unique",
+            "UNIQUE(currency_id, factor_type, company_id)",
+            "Field currency must be unique by factor_type and company",
+        )
+    ]

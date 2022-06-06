@@ -7,11 +7,12 @@ from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
 from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
 
 
-class AccountMove(models.Model):
-    _inherit = "account.move"
+class ResPartner(models.Model):
+    _inherit = "res.partner"
 
-    subrogation_id = fields.Many2one(
-        comodel_name="subrogation.receipt",
-        string="Subrogation Receipt",
-        check_company=True,
+    bpce_factoring_balance = fields.Boolean(
+        string="Use BPCE factoring balance",
+        groups="account.group_account_invoice",
+        company_dependent=True,
+        help="Use BPCE factoring receivable balance external service",
     )
