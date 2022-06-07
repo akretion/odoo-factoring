@@ -19,6 +19,7 @@
                 >
                     <group>
                         <group>
+                            <field name="factor_validation" />
                             <field name="factor_fee" />
                             <field name="factor_fee_account_id" />
                             <field name="factor_tax_id" />

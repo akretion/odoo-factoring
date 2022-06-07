@@ -16,6 +16,13 @@ class AccountJournal(models.Model):
 
     # settings fields:
     is_factor = fields.Boolean()
+    # Automatic validation if for ease of use with no legal accounting
+    # While manual validation is for checking and possibly correcting
+    # the Factor transfer move once you have the Factor answer.
+    factor_validation = fields.Selection(
+        [("automatic", "Automatic"), ("manual", "Manual")],
+        default="automatic",
+    )
     factor_fee = fields.Float(string="Factor Fee %")
     factor_holdback_percent = fields.Float(string="Factor Holdback %")
     factor_partner_id = fields.Many2one(
