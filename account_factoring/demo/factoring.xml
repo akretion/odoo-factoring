@@ -7,7 +7,6 @@
         <field name="name" >FACTOR</field>
         <field name="code" >140000</field>
         <field name="user_type_id" ref="account.data_account_type_current_liabilities" />
-        <field name="reconcile" eval="True" />
         <field name="internal_type" >other</field>
         <field name="internal_group" >liability</field>
     </record>
@@ -56,6 +55,16 @@
     >
         <field name="name" >FACT</field>
         <field name="payment_method_id" ref="account.account_payment_method_manual_in" />
+        <field name="bank_account_link" >fixed</field>
+        <field name="fixed_journal_id" ref="factor_journal" />
+    </record>
+
+    <record
+        id="factor_payment_mode"
+        model="account.payment.mode"
+    >
+        <field name="name" >FACT-R</field>
+        <field name="payment_method_id" ref="account.account_payment_method_manual_out" />
         <field name="bank_account_link" >fixed</field>
         <field name="fixed_journal_id" ref="factor_journal" />
     </record>

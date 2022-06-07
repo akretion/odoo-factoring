@@ -22,7 +22,7 @@
                  <button
                     name="button_factor_paid"
                     type="object"
-                    attrs="{'invisible': ['|', ('payment_state_with_factor', '!=', 'transferred_to_factor'), ('state', '!=', 'posted')]}"
+                    attrs="{'invisible': ['|', '|', ('payment_state_with_factor', '!=', 'transferred_to_factor'), ('state', '!=', 'posted'), ('move_type', '=', 'out_refund')]}"
                     class="oe_highlight"
                     string="Factor Paid"
                     groups="account.group_account_invoice"
@@ -36,7 +36,7 @@
                     id="factoring"
                     string="Factoring"
                     name="factoring"
-                    attrs="{'invisible': [('payment_mode_id', '=', False)]}"
+                    attrs="{'invisible': [('factor_transfer_id', '=', False)]}"
                 >
                     <group id="factoring_group">
                         <group>
@@ -84,7 +84,7 @@
     <record model="ir.ui.view" id="account_move_tree_view">
         <field name="name">account.move.tree (in account_factoring)</field>
         <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_out_invoice_tree" />
+        <field name="inherit_id" ref="account.view_invoice_tree" />
         <field name="arch" type="xml">
             <field name="payment_state" position="attributes">
                  <attribute name="invisible">1</attribute>

@@ -50,14 +50,14 @@ class AccountMove(models.Model):
     def _compute_payment_state_with_factor(self):
         for move in self:
             if (
-                move.move_type == "out_invoice"
+                move.move_type in ("out_invoice", "out_refund")
                 and move.payment_mode_id
                 and move.payment_mode_id.fixed_journal_id
                 and move.payment_mode_id.fixed_journal_id.is_factor
             ):
                 # TODO submitted_to_factor when in_payment ?
                 # see _get_invoice_in_payment_state in account and EE
-                if move.payment_state == "not_paid" and move.state != "cancel":
+                if move.payment_state in ("partial", "not_paid") and move.state != "cancel":
                     if move.factor_transfer_id and move.factor_transfer_id.state == "draft":
                         move.payment_state_with_factor = "submitted_to_factor"
                     else:

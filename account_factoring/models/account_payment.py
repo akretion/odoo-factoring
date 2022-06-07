@@ -11,8 +11,13 @@ class AccountPayment(models.Model):
     def _prepare_move_line_default_vals(self, write_off_line_vals=None):
         self.ensure_one()
         line_vals = super()._prepare_move_line_default_vals(write_off_line_vals)
-        if self.payment_type == "inbound" and self.journal_id.is_factor:
-            line_vals = self._simulate_factor_credit_transfer_lines(line_vals)
+        if self.journal_id.is_factor:
+            if self.payment_type == "inbound":  # credit transfer
+                line_vals = self._simulate_factor_credit_transfer_lines(line_vals)
+            elif self.payment_type == "outbound":  # refund transfer
+                for line in line_vals:
+                    if line["credit"] > 0.0:
+                        line["account_id"] = self.journal_id.default_account_id.id
         return line_vals
 
     def _simulate_factor_credit_transfer_lines(self, line_vals):
