@@ -2,6 +2,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools import float_compare, float_is_zero
 
 
@@ -14,6 +15,7 @@ class AccountMove(models.Model):
         selection=[
             ("not_paid", "Not Paid"),
             ("to_transfer_to_factor", "To Transfer to Factor"),  # added for factoring
+            ("submitted_to_factor", "Submitted to Factor"),  # added for factoring
             ("transferred_to_factor", "Transferred to Factor"),  # added for factoring
             ("factor_paid", "Factor Paid"),  # added for factoring
             ("in_payment", "In Payment"),
@@ -22,7 +24,7 @@ class AccountMove(models.Model):
             ("reversed", "Reversed"),
             ("invoicing_legacy", "Invoicing App Legacy"),
         ],
-        string="Payment Status",
+        string="Payment/Factor Status",
         store=True,
         readonly=True,
         copy=False,
@@ -34,15 +36,17 @@ class AccountMove(models.Model):
     factor_transfer_id = fields.Many2one(
         "account.move",
         help="Credit transfer to the Factor",
-        compute="_compute_factor_transfer_id"
+        copy=False,
+#        compute="_compute_factor_transfer_id"
     )
     factor_payment_id = fields.Many2one(
         "account.move",
         help="Move with the effect of the payment from the Customer to the Factor",
-        compute="_compute_factor_payment_id"
+        copy=False,
+#        compute="_compute_factor_payment_id"
     )
 
-    @api.depends("payment_state", "payment_mode_id")
+    @api.depends("payment_state", "payment_mode_id", "factor_transfer_id", "factor_payment_id")
     def _compute_payment_state_with_factor(self):
         for move in self:
             if (
@@ -51,8 +55,13 @@ class AccountMove(models.Model):
                 and move.payment_mode_id.fixed_journal_id
                 and move.payment_mode_id.fixed_journal_id.is_factor
             ):
+                # TODO submitted_to_factor when in_payment ?
+                # see _get_invoice_in_payment_state in account and EE
                 if move.payment_state == "not_paid" and move.state != "cancel":
-                    move.payment_state_with_factor = "to_transfer_to_factor"
+                    if move.factor_transfer_id and move.factor_transfer_id.state == "draft":
+                        move.payment_state_with_factor = "submitted_to_factor"
+                    else:
+                        move.payment_state_with_factor = "to_transfer_to_factor"
                 elif move.payment_state == "paid":
                     move.payment_state_with_factor = "transferred_to_factor"
                 else:
@@ -61,11 +70,12 @@ class AccountMove(models.Model):
                 move.payment_state_with_factor = move.payment_state
 
     def _compute_factor_transfer_id(self):
+        # TODO remove after DB migration
         for inv in self:
             factor_transfers = (
                 inv.mapped("line_ids")
                 .mapped("full_reconcile_id")
-                .reconciled_line_ids.mapped("move_id")
+                .reconciled_line_ids.mapped("move_id") # TODO other match if submitted_to_factor?
                 .filtered(
                     lambda move: move.id not in self.ids and move.state != "cancel"
                 )
@@ -76,6 +86,7 @@ class AccountMove(models.Model):
                 inv.factor_transfer_id = False
 
     def _compute_factor_payment_id(self):
+        # TODO remove after DB migration
         for inv in self:
             factor_payments = (
                 inv.factor_transfer_id.mapped("line_ids")
@@ -133,6 +144,29 @@ class AccountMove(models.Model):
             wiz.action_create_payments()
         return True
 
+    def _post(self, soft=True):
+        """
+        In case the factor transfer is validated manually, we automatically reconcile
+        the transfer with its invoice.
+        """
+        res = super()._post(soft=soft)
+        for move in self:
+            auto_reconcile = self.search([("factor_transfer_id", "=", move.id)], limit=1)
+            if auto_reconcile:
+                lines = self.env["account.move.line"].search([
+                    ("move_id", "in", [move.id, auto_reconcile.id]),
+                    ('account_internal_type', 'in', ('receivable', 'payable')),
+                    ('reconciled', '=', False),
+                ])
+                lines.with_context(
+                    {
+                        # context to avoid errors in account.payment#_synchronize_from_moves
+                        "skip_account_move_synchronization": True,
+                        "factor_move_synchronization": True,
+                    }
+                ).reconcile()
+        return res
+
     def button_factor_paid(self):
         """
         Compute the proper holdback amounts to release.
@@ -141,6 +175,14 @@ class AccountMove(models.Model):
         is more subtle to release.
         """
         self.ensure_one()
+        if (
+            self.factor_payment_id
+            and self.factor_payment_id.state != "cancel"
+        ):
+            raise UserError(_("Invoice already has a payment move!"))
+        if self.payment_state_with_factor != "transferred_to_factor":
+            raise UserError(_("Invoice should be transferred to Factor!"))
+
         lines = self.factor_transfer_id.line_ids.filtered(
             lambda line: float_compare(line.debit, 0.0, precision_rounding=0.01) > 0
             and line.account_id.id
@@ -150,17 +192,11 @@ class AccountMove(models.Model):
         # getting the % holdback this way ensure it can easily be reconciled
         invoice_holdback = sum(lines.mapped("debit"))
         initial_balance_journal = (
-            lines[0]
-            .move_id.with_context({"compute_factor_partner": self.partner_id})
-            .journal_id
+            self.factor_transfer_id.with_context(
+                {"compute_factor_partner": self.partner_id}
+            ).journal_id
         )
 
-        dg = self.currency_id.rounding
-        initial_balance_journal = (
-            lines[0]
-            .move_id.with_context({"compute_factor_partner": self.partner_id})
-            .journal_id
-        )
         customer_balance = (
             initial_balance_journal.factor_customer_credit - self.amount_total
         )  # DIFFERENT FROM account_payment !!
@@ -175,6 +211,7 @@ class AccountMove(models.Model):
             + invoice_holdback
         )
 
+        dg = self.currency_id.rounding
         if float_compare(limit_holdback, 0.0, precision_rounding=dg) < 0:
             limit_holdback = 0
         if initial_limit_holdback > limit_holdback:
@@ -249,6 +286,9 @@ class AccountMove(models.Model):
                 "line_ids": payment_vals_list,
             }
         )
+        self.factor_payment_id = payment.move_id.id
+        # TODO study if we could leave the payment move in draft for
+        # manual validation eventually (then reconciliation should be automated)
         payment.action_post()
 
         # now we reconcile the % holdback release:
@@ -273,9 +313,9 @@ class AccountMove(models.Model):
         self.env.cr.commit()  # required to test if imit_holdback is zero later
         self.env["account.journal"].flush(["factor_limit_holdback_balance"])
         balance_journal = (
-            lines[0]
-            .move_id.with_context({"compute_factor_partner": self.partner_id})
-            .journal_id
+            self.factor_transfer_id.with_context(
+                {"compute_factor_partner": self.partner_id}
+            ).journal_id
         )
         if float_is_zero(
             balance_journal.factor_limit_holdback_balance, 0.0, precision_rounding=dg

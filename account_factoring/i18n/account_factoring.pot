@@ -260,7 +260,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:account_factoring.field_account_bank_statement_line__payment_state_with_factor
 #: model:ir.model.fields,field_description:account_factoring.field_account_move__payment_state_with_factor
 #: model:ir.model.fields,field_description:account_factoring.field_account_payment__payment_state_with_factor
-msgid "Payment Status"
+msgid "Payment/Factor Status"
 msgstr ""
 
 #. module: account_factoring
