@@ -102,4 +102,31 @@
         </field>
     </record>
 
+    <record model="ir.ui.view" id="view_account_move_line_filter">
+        <field name="name">account.move.line.search (in account_factoring)</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_account_move_line_filter" />
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='misc_filter']" position="before">
+                <filter
+                    name="factor_filter"
+                    string="Factor"
+                    domain="[('journal_id.is_factor', '=', True)]"
+                    context="{'default_journal_type': 'bank'}"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_account_moves_journal_factor" model="ir.actions.act_window">
+        <field name="context">{'journal_type':'general', 'search_default_group_by_move': 1, 'search_default_posted':1, 'search_default_factor_filter':1, 'name_groupby':1, 'expand': 1}</field>
+        <field name="name">Factor</field>
+        <field name="res_model">account.move.line</field>
+        <field name="domain">[('display_type', 'not in', ('line_section', 'line_note'))]</field>
+        <field name="view_id" ref="account.view_move_line_tree_grouped_misc"/>
+        <field name="view_mode">tree,pivot,graph</field>
+    </record>
+
+    <menuitem id="menu_action_account_moves_journal_factor" action="action_account_moves_journal_factor" groups="account.group_account_readonly" parent="account.menu_finance_entries_accounting_journals" sequence="10"/>
+
 </odoo>
