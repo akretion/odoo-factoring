@@ -12,10 +12,10 @@ class AccountPayment(models.Model):
         self.ensure_one()
         line_vals = super()._prepare_move_line_default_vals(write_off_line_vals)
         if self.payment_type == "inbound" and self.journal_id.is_factor:
-            line_vals = self._inject_factor_credit_transfer_lines(line_vals)
+            line_vals = self._simulate_factor_credit_transfer_lines(line_vals)
         return line_vals
 
-    def _inject_factor_credit_transfer_lines(self, line_vals):
+    def _simulate_factor_credit_transfer_lines(self, line_vals):
         self.ensure_one()
         original_liquidity_line = False
         new_line_vals = []
@@ -65,7 +65,10 @@ class AccountPayment(models.Model):
             - factor_fee_tax_amount
         )
 
-        if float_compare(limit_holdback, 0.0, precision_rounding=dg) < 0:
+        if (
+            float_compare(limit_holdback, 0.0, precision_rounding=dg) < 0
+            or not self.partner_id.factor_credit_limit
+        ):
             limit_holdback = 0
 
         # TODO limit_holdback can also be 0 under other conditions
@@ -99,7 +102,7 @@ class AccountPayment(models.Model):
             float_compare(limit_holdback + remaining_amount, 0, precision_rounding=dg)
             > 0
         ):
-            # the factor customer balance is such that all money is holded back.
+            # the factor customer balance is such that all money is hold back.
             # (remaining_amount is negative)
             # now we should make sure that we don't holdback more than the max possible:
             limit_holdback += remaining_amount
