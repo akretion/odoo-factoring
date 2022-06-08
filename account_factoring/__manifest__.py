@@ -18,5 +18,7 @@
         "views/account_move.xml",
         "views/res_partner.xml",
     ],
-    "demo": [],
+    "demo": [
+        "demo/factoring.xml",
+    ],
 }

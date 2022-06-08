@@ -28,7 +28,7 @@ class AccountPaymentRegister(models.TransientModel):
     def _create_payments(self):
         self.ensure_one()
         if self.journal_id.is_factor:
-            return super(
+            payments = super(
                 AccountPaymentRegister,
                 self.with_context(
                     {
@@ -38,5 +38,21 @@ class AccountPaymentRegister(models.TransientModel):
                     }
                 ),
             )._create_payments()
+            if (
+                self.line_ids[0].move_id.factor_transfer_id
+                and self.line_ids[0].move_id.factor_transfer_id.state != "cancel"
+                ):
+                raise UserError(_("Invoice already has a factor transfer!"))
+            else:
+                self.line_ids[0].move_id.factor_transfer_id = payments[0].move_id
+            return payments
         else:
             return super()._create_payments()
+
+    def _post_payments(self, to_process, edit_mode=False):
+        if not(self.journal_id.is_factor and self.journal_id.factor_validation == "manual"):
+            return super()._post_payments(to_process, edit_mode)
+
+    def _reconcile_payments(self, to_process, edit_mode=False):
+        if not(self.journal_id.is_factor and self.journal_id.factor_validation == "manual"):
+            return super()._reconcile_payments(to_process, edit_mode)
