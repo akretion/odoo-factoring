@@ -37,13 +37,11 @@ class AccountMove(models.Model):
         "account.move",
         help="Credit transfer to the Factor",
         copy=False,
-#        compute="_compute_factor_transfer_id"
     )
     factor_payment_id = fields.Many2one(
         "account.move",
         help="Move with the effect of the payment from the Customer to the Factor",
         copy=False,
-#        compute="_compute_factor_payment_id"
     )
 
     @api.depends("payment_state", "payment_mode_id", "factor_transfer_id", "factor_payment_id")
@@ -68,43 +66,6 @@ class AccountMove(models.Model):
                     move.payment_state_with_factor = move.payment_state
             else:
                 move.payment_state_with_factor = move.payment_state
-
-    def _compute_factor_transfer_id(self):
-        # TODO remove after DB migration
-        for inv in self:
-            factor_transfers = (
-                inv.mapped("line_ids")
-                .mapped("full_reconcile_id")
-                .reconciled_line_ids.mapped("move_id") # TODO other match if submitted_to_factor?
-                .filtered(
-                    lambda move: move.id not in self.ids and move.state != "cancel"
-                )
-            )
-            if factor_transfers:
-                inv.factor_transfer_id = factor_transfers[0]
-            else:
-                inv.factor_transfer_id = False
-
-    def _compute_factor_payment_id(self):
-        # TODO remove after DB migration
-        for inv in self:
-            factor_payments = (
-                inv.factor_transfer_id.mapped("line_ids")
-                .filtered(
-                    lambda line: line.account_id
-                    == inv.factor_transfer_id.journal_id.factor_holdback_account_id
-                )
-                .mapped("full_reconcile_id")
-                .reconciled_line_ids.mapped("move_id")
-                .filtered(
-                    lambda move: move.id not in self.factor_transfer_id.ids
-                    and move.state != "cancel"
-                )
-            )
-            if factor_payments:
-                inv.factor_payment_id = factor_payments[0]
-            else:
-                inv.factor_payment_id = False
 
     def button_draft(self):
         "Will cancel any related factor transfer or related factor payment"
