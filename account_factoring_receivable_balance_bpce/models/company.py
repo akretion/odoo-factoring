@@ -6,7 +6,7 @@ import logging
 
 from odoo import _, api, fields, models, Command
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, RedirectWarning
 from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
 
 
@@ -16,19 +16,65 @@ logger = logging.getLogger(__name__)
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    def ui_run_bpce_factoring_balance(self):
-        self.ensure_one()
-        self.env["subrogation.receipt"].with_company(
-            self
-        )._create_or_update_subrogation_receipt(
-            factor_type="bpce", partner_field="bpce_factoring_balance"
-        )
+    bpce_factor_code = fields.Char(size=6, help="N° de compte chez PBCE")
+    bpce_start_date = fields.Date(
+        string="Start Date", required=True, help="No account move will be selected before this date"
+    )
+    bpce_bank_journal_id = fields.Many2one(
+        comodel_name="account.journal", string="Compte bancaire lié à BPCE"
+    )
 
     def ui_configure_bpce_factoring_balance(self):
         self.ensure_one()
         if not self.factor_config_currency_id:
             raise UserError(_("You must select a currency to begin configuration"))
         self._configure_bpce_factoring(currency=self.factor_config_currency_id.name)
+        bpce_journals = self.env["account.journal"].search(
+            [("factor_type", "=", "bpce"), ("company_id", "=", self.id)]
+        )
+        action = {
+            k: v
+            for k, v in self.env.ref("account.action_account_journal_form")
+            .read()[0]
+            .items()
+            if k
+            not in (
+                "view_ids",
+                "view_id",
+                "xml_id",
+                "id",
+                "help",
+                "res_id",
+                "arch",
+                "search_view",
+                "binding_view_types",
+            )
+            # if k in ("type", "res_model", "target", "view_mode")
+        }
+        action["domain"] = "[('id', 'in', %s)]" % bpce_journals.ids
+        action["domain"] = "{'search_factor': 1}"
+        print(action)
+        print(action.keys())
+        action["view_mode"] = "tree,form"
+        action["name"] = "Journaux BPCE configurés"
+        action_id=self.env.ref("account.action_account_journal_form").id
+        active_ids = ",".join([str(x) for x in bpce_journals.ids])
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Configuration réussie",
+                "type": "success",  # warning/success
+                "message": "Consulter les journaux et comptes configurés",
+                "links": [{
+                    "label": "bla",
+                    "url": f"#action={action_id}&model=account.journal&active_ids={active_ids}",
+                }],
+                "sticky": True,  #True/False will display for few seconds if false
+                "next": action_id,  # {'type': 'ir.actions.act_window_close'},  # Refresh the form to show the key
+            },
+        }
 
     @api.model
     def _create_french_company(self, company_name=None):
@@ -57,7 +103,7 @@ class ResCompany(models.Model):
         self.ensure_one()
         currency = self.env.ref("base.%s" % currency.upper(), raise_if_not_found=False)
         if not currency:
-            raise UserError(_("Currency '%s' is unknown" % currency.name))
+            raise UserError("La devise '%s' est inconnu" % currency.name)
         if self.env["account.journal"].search(
             [
                 ("factor_type", "=", "bpce"),
@@ -72,13 +118,24 @@ class ResCompany(models.Model):
         fr_chart_template = self.env.ref("l10n_fr.l10n_fr_pcg_chart_template")
         company = self
         if self.chart_template_id != fr_chart_template:
-            raise UserError(
+            action = self.env.ref("account.action_account_config").read()[0]
+            action["name"] = "Configure accounting chart in '%s' company" % self.name
+            raise RedirectWarning(
                 _(
                     "The accounting chart installed in this company "
-                    "is not the french one. Configuration aborted !"
-                )
+                    "is not the french one. Install it first"
+                ),
+                action,
+                _("Go to accounting chart configuration"),
+                {"active_ids": [self.env.company.id]},
             )
-        if self.env["account.journal"].search([("factor_type", "=", currency.id)]):
+        if self.env["account.journal"].search(
+            [
+                ("factor_type", "=", "bpce"),
+                ("currency_id", "=", currency.id),
+                ("company_id", "=", company.id),
+            ]
+        ):
             raise UserError(
                 _(
                     "BPCE Journal with currency '%s' already exist. "

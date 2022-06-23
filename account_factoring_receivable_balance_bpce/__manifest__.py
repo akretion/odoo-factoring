@@ -18,6 +18,8 @@
         "data/action.xml",
         "views/partner.xml",
         "views/company.xml",
+        "views/subrogation_receipt.xml",
+        "views/config.xml",
     ],
     "demo": [
     ],

@@ -3,8 +3,8 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
-from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
 
 
 class ResPartner(models.Model):
@@ -16,3 +16,12 @@ class ResPartner(models.Model):
         company_dependent=True,
         help="Use BPCE factoring receivable balance external service",
     )
+
+    @api.constrains("bpce_factoring_balance", "ref")
+    def bpce_ref_constrains(self):
+        for rec in self:
+            if rec.bpce_factoring_balance and (not rec.ref or not rec.siret):
+                raise UserError(
+                    "Les balances clients gérées par BPCE doivent avoir "
+                    "les champs Référence et SIRET remplis"
+                )

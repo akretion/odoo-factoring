@@ -17,6 +17,7 @@
         "views/account.xml",
         "views/partner.xml",
         "views/company.xml",
+        "views/config.xml",
     ],
     "demo": [
     ],

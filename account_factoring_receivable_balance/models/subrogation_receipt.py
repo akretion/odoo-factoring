@@ -3,9 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
-from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
-from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
+from odoo.exceptions import UserError, RedirectWarning
 
 
 class SubrogationReceipt(models.Model):
@@ -25,7 +23,15 @@ class SubrogationReceipt(models.Model):
     factor_type = fields.Selection(related="factor_journal_id.factor_type", store=True)
     currency_id = fields.Many2one(related="factor_journal_id.currency_id", store=True)
     display_name = fields.Char(compute="_compute_display_name")
-    date = fields.Date(string="Confirmed Date", readonly=True)
+    date = fields.Date(
+        string="Confirmed Date",
+        readonly=True,
+        tracking=True,
+    )
+    statement_date = fields.Date(
+        help="Date of the last bank statement taken account in accounting"
+    )
+
     active = fields.Boolean(default=True)
     state = fields.Selection(
         [
@@ -41,7 +47,7 @@ class SubrogationReceipt(models.Model):
     expense_tax_amount = fields.Float(tracking=True, help="")
     holdback_amount = fields.Float(tracking=True, help="")
     company_id = fields.Many2one(
-        comodel_name="res.company", string="Company", required=True
+        comodel_name="res.company", string="Company", readonly=True, required=True
     )
     move_ids = fields.One2many(
         comodel_name="account.move",
@@ -61,14 +67,60 @@ class SubrogationReceipt(models.Model):
     @api.model
     def _get_moves_domain_for_factor(self, partner_selection_field=None):
         res = [
-            ("move_type", "in", ["out_invoice", "out_refund"]),
+            ("company_id", "=", self.env.company.id),
             ("subrogation_id", "=", False),
             ("state", "=", "posted"),
-            ("company_id", "=", self.env.company.id),
+            "|",
+            "&",
+            ("move_type", "in", ["out_invoice", "out_refund"]),
+            ("payment_state", "not in", ("paid", "invoicing_legacy")),
+            "&",
+            ("move_type", "=", "misc"),
+            ("line_ids.account_id.group_id", "=", self.env.ref("l10n_fr.1_pcg_411").id),
         ]
         if partner_selection_field:
-            res.append(("partner_id.%s" % partner_selection_field, "=", True))
+            res.append(
+                (
+                    "partner_id.commercial_partner_id.%s" % partner_selection_field,
+                    "=",
+                    True,
+                )
+            )
         return res
+
+    def _prepare_factor_file(self, factor_type):
+        self.ensure_one
+        method = "_prepare_factor_file_%s" % factor_type
+        if hasattr(self, method):
+            return getattr(self, method)()
+        else:
+            pass
+
+    def action_confirm(self):
+        for rec in self:
+            if rec.state == "draft":
+                rec.state = "confirmed"
+                rec.date = fields.Date.today()
+                data = self._prepare_factor_file(rec.factor_type)
+                if data:
+                    self.env["ir.attachment"].create(data)
+
+    def action_post(self):
+        for rec in self:
+            if (
+                rec.state == "confirmed"
+                and rec.holdback_amount > 0
+                and rec.expense_untaxed_amount > 0
+                and rec.expense_tax_amount > 0
+            ):
+                rec.state = "posted"
+            else:
+                raise UserError(
+                    _(
+                        "Check fields 'Holdabck Amount', 'Untaxed Amount', "
+                        "'Tax Amount', they should have a value"
+                    )
+                )
 
     @api.model
     def _create_or_update_subrogation_receipt(self, factor_type, partner_field=None):
@@ -80,8 +132,13 @@ class SubrogationReceipt(models.Model):
         )
         if not journals:
             raise UserError(
-                _("You must configure journal according to factor and currency")
+                _(
+                    "You must configure journal according to factor and currency.\n"
+                    "Click on 'Configure journals and accounts' "
+                    "in company page, 'Factor' tab"
+                )
             )
+
         moves_domain = self._get_moves_domain_for_factor(
             partner_selection_field=partner_field
         )
@@ -112,12 +169,23 @@ class SubrogationReceipt(models.Model):
                 "view_mode": "tree,form",
                 "domain": "[('id', 'in', %s)]" % subr_ids,
                 "type": "ir.actions.act_window",
-                "view_id": self.env.ref("account_factoring_receivable_balance.subrogation_receipt_tree").id,
-            }            
+                "view_id": self.env.ref(
+                    "account_factoring_receivable_balance.subrogation_receipt_tree"
+                ).id,
+            }
         else:
-            raise UserError(
-                _(
-                    "No invoice needs to be linked to a Factor Subrogation Receipt.\n"
-                    "Check matching csutomers or invoices state."
-                )
+            message = (
+                "No invoice needs to be linked to a Factor '%s'.\n"
+                "Check matching customers or invoices state." % factor_type
             )
+            raise RedirectWarning(
+                _(message),
+                self.env.ref("account.action_move_out_invoice_type").id,
+                _("See invoices and customers"),
+            )
+
+    def _sanitize_filepath(self, string):
+        "Helper to make safe filepath"
+        for elm in ["/", " ", ":", "<", ">", "\\", "|", "?", "*"]:
+            string = string.replace(elm, "_")
+        return string

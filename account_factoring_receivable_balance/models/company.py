@@ -9,10 +9,15 @@ from odoo.tests.common import Form
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    factor_config_currency_id = fields.Many2one(comodel_name="res.currency")
+    factor_config_currency_id = fields.Many2one(
+        comodel_name="res.currency",
+        string="Devise",
+        help="Use to configure account and journal",
+    )
 
     @api.model
     def _create_french_company(self, company_name=None):
+        "Only executed in demo context"
         demo_cpny_name = "BPCE demo"
         previous_cpny = self.search([("name", "=", demo_cpny_name)], limit=1)
         previous_cpny.write({"name": "Company %s" % previous_cpny.id})

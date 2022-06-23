@@ -7,7 +7,6 @@
             <xpath expr="//page[last()]" position="after">
                 <page name="factor" string="Factor">
                     <group name="factoring" groups="account.group_account_invoice">
-                        <group name="run_facto" string="Run"/>
                         <group name="config_facto" string="Configuration"/>
                     </group>
                 </page>
