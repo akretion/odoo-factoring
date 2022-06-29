@@ -18,10 +18,7 @@ class ResCompany(models.Model):
 
     bpce_factor_code = fields.Char(size=6, help="N° de compte chez PBCE")
     bpce_start_date = fields.Date(
-        string="Start Date", required=True, help="No account move will be selected before this date"
-    )
-    bpce_bank_journal_id = fields.Many2one(
-        comodel_name="account.journal", string="Compte bancaire lié à BPCE"
+        string="Start Date", help="No account move will be selected before this date"
     )
 
     def ui_configure_bpce_factoring_balance(self):
@@ -53,8 +50,6 @@ class ResCompany(models.Model):
         }
         action["domain"] = "[('id', 'in', %s)]" % bpce_journals.ids
         action["domain"] = "{'search_factor': 1}"
-        print(action)
-        print(action.keys())
         action["view_mode"] = "tree,form"
         action["name"] = "Journaux BPCE configurés"
         action_id=self.env.ref("account.action_account_journal_form").id
@@ -88,6 +83,7 @@ class ResCompany(models.Model):
         return company
 
     def ui_populate_data_for_factor(self):
+        raise UserError("Not yet implemented")
         self.env.ref("base.res_partner_2").bpce_factoring_balance = True
         super().ui_populate_data_for_factor()
 

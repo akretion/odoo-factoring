@@ -3,6 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import api, fields, models, Command
+from odoo.exceptions import UserError
 from odoo.tests.common import Form
 
 
@@ -17,7 +18,7 @@ class ResCompany(models.Model):
 
     @api.model
     def _create_french_company(self, company_name=None):
-        "Only executed in demo context"
+        "Can be called from Odoo Shell"
         demo_cpny_name = "BPCE demo"
         previous_cpny = self.search([("name", "=", demo_cpny_name)], limit=1)
         previous_cpny.write({"name": "Company %s" % previous_cpny.id})
@@ -38,6 +39,7 @@ class ResCompany(models.Model):
 
     def _prepare_data_for_factor(self, move_type="out_invoice"):
         self.ensure_one()
+        raise UserError("Not yet implemented")
         move_form = Form(
             self.env["account.move"]
             .with_company(self.env.company)
@@ -52,4 +54,5 @@ class ResCompany(models.Model):
 
     def ui_populate_data_for_factor(self):
         for rec in self:
+            raise UserError("Not yet implemented")
             rec._prepare_data_for_factor()

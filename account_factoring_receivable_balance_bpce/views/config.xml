@@ -18,11 +18,6 @@
                                 class="col-md-3"
                             />
                             <field name="bpce_start_date" />
-                            <label
-                                for="bpce_bank_journal_id"
-                                class="col-md-3"
-                            />
-                            <field name="bpce_bank_journal_id" />
                         </div>
                     </div>
                     <div class="o_setting_right_pane" id="bpce_right"/>

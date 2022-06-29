@@ -15,4 +15,3 @@ class ResConfigSettings(models.TransientModel):
 
     bpce_factor_code = fields.Char(related="company_id.bpce_factor_code")
     bpce_start_date = fields.Date(related="company_id.bpce_start_date")
-    bpce_bank_journal_id = fields.Many2one(related="company_id.bpce_bank_journal_id")

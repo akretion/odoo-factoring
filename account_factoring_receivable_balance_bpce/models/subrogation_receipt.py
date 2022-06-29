@@ -6,7 +6,7 @@ import base64
 import re
 
 from odoo import fields, models, tools
-from odoo.exceptions import UserError, RedirectWarning
+from odoo.exceptions import UserError
 
 
 FORMAT_VERSION = "7.0"
@@ -31,19 +31,6 @@ class SubrogationReceipt(models.Model):
         }
 
     def _prepare_factor_file_data_bpce(self):
-        """"""
-
-        def check_column_position(content, final=True):
-            line2 = content.split(RETURN)[1]
-            # line2 = content.readline(2)
-            currency = line2[177:180]
-            msg = "Problème de décalage colonne dans le fichier"
-            if final:
-                msg += " final"
-            else:
-                msg += " brut"
-            assert currency == self.factor_journal_id.currency_id.name, msg
-
         if not self.company_id.bpce_factor_code:
             raise UserError(
                 "Vous devez mettre le code du factor dans la société '%s'.\n"
@@ -53,12 +40,16 @@ class SubrogationReceipt(models.Model):
             raise UserError("Vous devez spécifier la date du dernier relevé")
         body, max_row, balance = self._get_bpce_body()
         header = self._get_bpce_header(max_row)
+        check_column_size(header)
         ender = self._get_bpce_ender(max_row, balance)
-        raw_data = ("%s%s%s%s" % (header, RETURN, body, ender)).replace("False", "    ")
+        check_column_size(ender)
+        raw_data = ("%s%s%s%s%s" % (header, RETURN, body, RETURN, ender)).replace(
+            "False", "    "
+        )
         data = clean_string(raw_data)
         # check there is no regression in colmuns position
-        # check_column_position(raw_data, False)
-        # check_column_position(data)
+        check_column_position(raw_data, self.factor_journal_id, False)
+        check_column_position(data, self.factor_journal_id)
         dev_mode = tools.config.options.get("dev_mode")
         if dev_mode and dev_mode[0][-3:] == "pdb" or False:
             # make debugging easier saving file on filesystem to check
@@ -66,7 +57,7 @@ class SubrogationReceipt(models.Model):
             debug(data)
             raise UserError("See files /odoo/subrog*.txt")
         # non ascii chars are replaced
-        data = bytes(data, "ascii", "replace").replace(b"?", b"\\")
+        data = bytes(data, "ascii", "replace").replace(b"?", b" ")
         return base64.b64encode(data)
 
     def _get_bpce_header(self, max_row):
@@ -98,24 +89,27 @@ class SubrogationReceipt(models.Model):
         return "09{seq}138{code}{name}{balance}{reserved}".format(**info)
 
     def _get_bpce_body(self):
-        """ """
         self = self.sudo()
         sequence = 1
         rows = []
         for move in self.move_ids:
             partner = move.partner_id.commercial_partner_id
             sequence += 1
-            name = pad(move.name, 30)
-            p_type = get_type_piece(move.move_type, move.journal_id.type)
+            name = pad(move.name, 30, position="left")
+            p_type = get_type_piece(move, move.journal_id.type)
             balance = 0
             total = move.amount_total_in_currency_signed
             info = {
                 "seq": pad(sequence, 6, 0),
-                "siret": pad(partner.siret or "", 14, position="right"),
-                "pname": pad(partner.name[:15], 15),
-                "ref_cli": pad(partner.ref, 10),
+                "siret": pad(" ", 14)
+                if not partner.siret
+                else pad(partner.siret, 14, 0, position="left"),
+                "pname": pad(partner.name[:15], 15, position="left"),
+                "ref_cli": pad(partner.ref, 10, position="left"),
                 "res1": pad(" ", 5),
-                "activity": "E",  # TODO manage between Domestique/Export
+                "activity": "D"
+                if partner.country_id == self.env.ref("base.fr")
+                else "E",
                 "res2": pad(" ", 9),
                 "cmt": pad(" ", 20),
                 "piece": name,
@@ -140,12 +134,13 @@ class SubrogationReceipt(models.Model):
                 "res4": pad(" ", 17),
             }
             balance += total
-            string = "02{seq}{siret}{pname}{ref_cli}{res1}{activity}{res2}{cmt}"
-            string += "{piece}{piece_factor}{type}{paym}{date}{date_due}{total}"
-            string += "{devise}{res3}{eff_total}{eff_imputed}{eff_echeance}{eff_pull}"
-            string += "{eff_type}{res4}"
-            print(string.format(**info))
-            rows.append(string.format(**info))
+            fstring = "02{seq}{siret}{pname}{ref_cli}{res1}{activity}{res2}{cmt}"
+            fstring += "{piece}{piece_factor}{type}{paym}{date}{date_due}"
+            fstring += "{total}{devise}{res3}{eff_non_echu}{eff_num}{eff_total}"
+            fstring += "{eff_imputed}{rib}{eff_echeance}{eff_pull}{eff_type}{res4}"
+            string = fstring.format(**info)
+            check_column_size(string, fstring, info)
+            rows.append(string)
         return (RETURN.join(rows), len(rows), balance)
 
 
@@ -155,12 +150,28 @@ def get_piece_factor(name, p_type):
     return name[:30]
 
 
-def get_type_piece(move_type, journal_type):
-    "in_invoice/refund, in/out_receipt   sale/purchase/cash/bank/general"
+def get_type_piece(move, journal_type):
     p_type = False
+    move_type = move.move_type
     if move_type == "entry":
         if journal_type == "general":
-            p_type = "ODC"
+            # TODO : improve
+            od_type = False
+            lines = move.line_ids.filtered(
+                lambda s: s.account_id.group_id == s.env.ref("l10n_fr.1_pcg_411")
+            )
+            for line in lines:
+                if max(line.debit, line.credit) == move.debit:
+                    if line.debit == move.debit:
+                        od_type = "D"
+                    else:
+                        od_type = "C"
+                    break
+            if not od_type:
+                raise UserError(
+                    "Impossible de déterminer le type de l'OD %s" % move.name
+                )
+            p_type = "OD%s" % od_type
     elif move_type == "out_invoice":
         p_type = "FAC"
     elif move_type == "out_refund":
@@ -173,13 +184,13 @@ def bpce_date(date_field):
     return date_field.strftime("%d%m%Y")
 
 
-def pad(string, pad, end=" ", position="left"):
+def pad(string, pad, end=" ", position="right"):
     "Complete string by leading `end` string from `position`"
     if isinstance(end, (int, float)):
         end = str(end)
     if isinstance(string, (int, float)):
         string = str(string)
-    if position == "left":
+    if position == "right":
         string = string.rjust(pad, end)
     else:
         string = string.ljust(pad, end)
@@ -187,11 +198,11 @@ def pad(string, pad, end=" ", position="left"):
 
 
 def clean_string(string):
-    """Remove all except [A-Z], space, \\, \r, \n
+    """Remove all except [A-Z], space, \r, \n
     https://www.rapidtables.com/code/text/ascii-table.html"""
     string = string.replace(FORMAT_VERSION, "FORMATVERSION")
     string = string.upper()
-    string = re.sub(r"[\x21-\x2F]|[\x3A-\x40]|[\x5E-\x7F]|\x0A\x0D", r"\\", string)
+    string = re.sub(r"[\x21-\x2F]|[\x3A-\x40]|[\x5E-\x7F]|\x0A\x0D", r" ", string)
     string = string.replace("FORMATVERSION", FORMAT_VERSION)
     return string
 
@@ -202,3 +213,32 @@ def debug(content, suffix=""):
         if isinstance(content, str):
             content = bytes(content, "ascii", "replace")
         f.write(content)
+
+
+def check_column_size(string, fstring=None, info=None):
+    if len(string) != 275:
+        if fstring and info:
+            fstring = fstring.replace("{", "|{")
+            fstring = fstring.format(**info)
+            strings = fstring.split("|")
+            for mystr in strings:
+                strings[strings.index(mystr)] = "%s(%s)" % (mystr, len(mystr))
+            fstring = "|".join(strings)
+        else:
+            fstring = ""
+        raise UserError(
+            "La ligne suivante contient %s caractères au lieu de 275\n\n%s"
+            "\n\nDebugging string:\n%s" % (len(string), string, fstring)
+        )
+
+
+def check_column_position(content, factor_journal, final=True):
+    line2 = content.split(RETURN)[1]
+    # line2 = content.readline(2)
+    currency = line2[177:180]
+    msg = "Problème de décalage colonne dans le fichier"
+    if final:
+        msg += " final"
+    else:
+        msg += " brut"
+    assert currency == factor_journal.currency_id.name, msg

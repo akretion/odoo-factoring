@@ -11,7 +11,7 @@
         <field name="inherit_id" ref="account.view_account_journal_form"/>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='bank_account']//field[@name='currency_id']" position="after">
-                <field name="factor_type" attrs="{'invisible': [('type', '!=', 'general')]}"/>
+                <field name="factor_type" attrs="{'invisible': [('type', 'not in', ('general', 'bank'))]}"/>
             </xpath>
             <xpath expr="//page[last()]" position="after">
                 <page name="factor" string="Factor" attrs="{'invisible': [('factor_type', '=', False)]}"/>

@@ -9,3 +9,7 @@ from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lan
 
 class AccountJournal(models.Model):
     _inherit = "account.journal"
+
+    factor_type = fields.Selection(
+        selection_add=[("bpce", "BPCE")], ondelete={"bpce": "set null"}
+    )

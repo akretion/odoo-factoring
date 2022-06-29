@@ -5,8 +5,9 @@
     <field name="arch" type="xml">
         <form>
             <header>
-                <button name="action_confirm" type="object" string="Confirm" attrs="{'invisible': [('state', '!=', 'draft')]}" class="oe_highlight"/>
-                <button name="action_post" type="object" string="Post" attrs="{'invisible': [('state', '!=', 'confirmed')]}" class="oe_highlight"/>
+                <button name="action_confirm" type="object" string="Confirm" attrs="{'invisible': [('state', '!=', 'draft')]}" class="oe_highlight" />
+                <button name="action_post" type="object" string="Post" attrs="{'invisible': [('state', '!=', 'confirmed')]}" class="oe_highlight" />
+                <button name="action_goto_moves" type="object" string="See account moves" />
                 <field name="state" widget="statusbar"/>
             </header>
             <sheet>
@@ -78,10 +79,9 @@
         </search>
     </field>
 </record>
-            <!-- <filter name="" string="" domain="[]" context="{'group_by' : ''}" -->/>
 
 <record id="subrogation_receipt_action" model="ir.actions.act_window">
-    <field name="name">Subrogation Receipt</field>
+    <field name="name">Subrogation Receipts</field>
     <field name="res_model">subrogation.receipt</field>
     <field name="view_mode">tree,form</field>
 </record>
