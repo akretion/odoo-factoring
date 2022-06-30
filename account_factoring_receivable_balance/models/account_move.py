@@ -7,8 +7,8 @@ from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
 from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
 
 
-class AccountMove(models.Model):
-    _inherit = "account.move"
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
 
     subrogation_id = fields.Many2one(
         comodel_name="subrogation.receipt",

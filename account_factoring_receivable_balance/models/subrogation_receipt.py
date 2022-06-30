@@ -48,8 +48,8 @@ class SubrogationReceipt(models.Model):
     company_id = fields.Many2one(
         comodel_name="res.company", string="Company", readonly=True, required=True
     )
-    move_ids = fields.One2many(
-        comodel_name="account.move",
+    line_ids = fields.One2many(
+        comodel_name="account.move.line",
         inverse_name="subrogation_id",
         readonly=True,
     )
@@ -60,61 +60,65 @@ class SubrogationReceipt(models.Model):
             rec.display_name = "%s %s %s" % (
                 rec.factor_type,
                 rec.currency_id.name,
-                rec.date or rec.state,
+                rec.date or rec._fields["state"].selection[0][1],
             )
 
     @api.model
-    def _get_moves_domain_for_factor(
-        self, factor_type, account_group, partner_selection_field=None, currency=None
+    def _get_domain_for_factor(
+        self, factor_type, partner_selection_field=None, currency=None
     ):
-        """We separate domain in multi parts to avoid to compose
-        over complicated queries"""
+        """partner_selection_field is a field on partners to guess
+        which account data need to be retrieved.
+        You have to create it in your own fatcor module
+        """
         bank_journal = self._get_bank_journal(factor_type, currency=currency)
-        if not bank_journal:
-            return False
-        group_id = self.env.ref(account_group).id
-        main = [
-            ("company_id", "=", self.env.company.id),
+        domain = [
+            ("company_id", "=", self._get_company_id()),
+            ("parent_state", "=", "posted"),
             ("subrogation_id", "=", False),
-            ("state", "=", "posted"),
-        ]
-        dom_inv = [
-            ("move_type", "in", ["out_invoice", "out_refund"]),
-            ("payment_state", "not in", ("paid",)),
-        ]
-        if partner_selection_field:
-            dom_inv.append(
-                (
-                    "partner_id.commercial_partner_id.%s" % partner_selection_field,
-                    "=",
-                    True,
-                )
-            )
-        dom_misc = [
-            ("move_type", "=", "misc"),
-            ("line_ids.account_id.group_id", "=", group_id),
-        ]
-        dom_bk = [
-            ("move_id.move_type", "=", "entry"),
-            ("move_id.journal_id", "=", bank_journal.id),
-            ("account_id.group_id", "=", group_id),
+            self._get_customer_accounts(),
             ("full_reconcile_id", "=", False),
+            (
+                "partner_id.commercial_partner_id.%s" % partner_selection_field,
+                "=",
+                True,
+            ),
+            "|",
+            ("move_id.partner_bank_id", "!=", bank_journal.bank_account_id.id),
+            ("move_id.partner_bank_id", "=", False),
         ]
-        main_line = [("%s.%s" % ("move_id", x[0]), x[1], x[2]) for x in main]
-        return {
-            "invoices": main + dom_inv,
-            "misc": main + dom_misc,
-            "bank": main_line + dom_bk,
-        }
+        return domain
 
     @api.model
-    def _create_or_update_subrogation_receipt(
-        self, factor_type, account_group, partner_field=None
-    ):
+    def _get_customer_accounts(self):
+        """We may also us:
+        res = self.env["res.partner"].default_get(['property_account_receivable_id'])
+        self.env["account.account"].browse(res["property_account_receivable_id"])
+        
+        but we are not sure that the user default one is the same
+        """
+        property_ = self.env["ir.property"].search(
+            [
+                ("name", "=", "property_account_receivable_id"),
+                ("company_id", "=", self._get_company_id()),
+                ("res_id", "=", False),
+            ]
+        )
+        id_ = property_.value_reference[property_.value_reference.find(",") + 1 :]
+        account = self.env["account.account"].browse(int(id_))
+        return [
+            "account_id.code",
+            "like",
+            "%s%s" % (account.code.replace("0", ""), "%"),
+        ]
+
+    @api.model
+    def _create_or_update_subrogation_receipt(self, factor_type, partner_field=None):
         journals = self.env["account.journal"].search(
             [
                 ("factor_type", "=", factor_type),
-                ("company_id", "=", self.env.company.id),
+                ("type", "=", "general"),
+                ("company_id", "=", self._get_company_id()),
             ]
         )
         if not journals:
@@ -128,53 +132,52 @@ class SubrogationReceipt(models.Model):
         subr_ids = []
         missing_journals = []
         for journal in journals:
-            move_domains = self._get_moves_domain_for_factor(
+            self.search(
+                [
+                    ("factor_journal_id", "=", journal.id),
+                    ("state", "=", "draft"),
+                ]
+            ).sudo().unlink()
+            domain = self._get_domain_for_factor(
                 factor_type,
-                account_group,
                 partner_selection_field=partner_field,
                 currency=journal.currency_id,
             )
-            if not move_domains:
+            if not domain:
                 missing_journals.append(journal)
                 continue
-            inv_moves = self.env["account.move"].search(
-                move_domains["invoices"]
-                + [("currency_id", "=", journal.currency_id.id)]
+            lines = self.env["account.move.line"].search(
+                domain + [("move_id.currency_id", "=", journal.currency_id.id)]
             )
-            misc_moves = self.env["account.move"].search(
-                move_domains["misc"] + [("currency_id", "=", journal.currency_id.id)]
-            )
-            move_lines = self.env["account.move.line"].search(
-                move_domains["bank"]
-                + [("move_id.currency_id", "=", journal.currency_id.id)]
-            )
-            bank_moves = move_lines.mapped("move_id")
-            moves = inv_moves | misc_moves | bank_moves
-            if not moves:
+            if not lines:
                 continue
-            self.search(
-                [("factor_journal_id", "=", journal.id), ("state", "=", "draft")]
-            ).unlink()
-            subrog = self.create(
+            subrog = self.sudo().create(
                 {
                     "factor_journal_id": journal.id,
                     "company_id": journal.company_id.id,
                 }
             )
             subr_ids.append(subrog.id)
-            moves.write({"subrogation_id": subrog.id})
+            lines.write({"subrogation_id": subrog.id})
         if subr_ids:
             action = {
                 "name": _("Generated Subrogation"),
-                "res_model": "subrogation.receipt",
                 "view_mode": "tree,form",
-                "domain": "[('id', 'in', %s)]" % subr_ids,
+                "res_model": "subrogation.receipt",
                 "type": "ir.actions.act_window",
-                "target": "new",
-                "view_id": self.env.ref(
-                    "account_factoring_receivable_balance.subrogation_receipt_tree"
-                ).id,
+                "target": "current",
+                "views": [
+                    (
+                        self.env.ref(
+                            "account_factoring_receivable_balance."
+                            "subrogation_receipt_tree"
+                        ).id,
+                        "tree",
+                    )
+                ],
+                "domain": "[('id', 'in', %s)]" % subr_ids,
             }
+
             if missing_journals:
                 message = (
                     "Missing bank journal for %s and currency %s to finish process"
@@ -187,11 +190,25 @@ class SubrogationReceipt(models.Model):
                 raise RedirectWarning(
                     _(message), action.id, _("See created subrogations")
                 )
-            return action
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "type": "success",
+                    "title": "Subrogation Receipts",
+                    "message": _(
+                        "Subrogation Receipts have been created",
+                    ),
+                    "sticky": True,
+                    "next": action,
+                },
+            }
         else:
             message = (
-                "No invoice needs to be linked to a Factor '%s'.\n"
-                "Check matching customers or invoices state." % factor_type
+                "No invoice needs to be linked to %s factor.\n"
+                "Check matching settings on: "
+                "\n - customers"
+                "\n - company \n\n\n domain\n%s" % (factor_type.upper(), domain)
             )
             raise RedirectWarning(
                 _(message),
@@ -251,8 +268,17 @@ class SubrogationReceipt(models.Model):
         self.ensure_one()
         return {
             "name": _("Subrogation Receipt %s" % self.display_name),
-            "res_model": "account.move",
+            "res_model": "account.move.line",
             "view_mode": "tree,form",
             "domain": "[('subrogation_id', '=', %s)]" % self.id,
             "type": "ir.actions.act_window",
         }
+
+    def unlink(self):
+        for rec in self:
+            if rec.state != "draft":
+                raise UserError(_("Only subrogation in draft state can be deleted"))
+        return super().unlink()
+
+    def _get_company_id(self):
+        return self.env.user.company_id.id

@@ -5,7 +5,7 @@
 import base64
 import re
 
-from odoo import fields, models, tools
+from odoo import api, fields, models, tools
 from odoo.exceptions import UserError
 
 
@@ -60,6 +60,19 @@ class SubrogationReceipt(models.Model):
         data = bytes(data, "ascii", "replace").replace(b"?", b" ")
         return base64.b64encode(data)
 
+    @api.model
+    def _get_domain_for_factor(
+        self, factor_type, partner_selection_field=None, currency=None
+    ):
+        "Minimal override of the Account move lines"
+        domain = super()._get_domain_for_factor(
+            factor_type,
+            partner_selection_field=partner_selection_field,
+            currency=currency,
+        )
+        domain = [("date", ">=", self.env.user.company_id.bpce_start_date)] + domain
+        return domain
+
     def _get_bpce_header(self, max_row):
         self = self.sudo()
         info = {
@@ -92,11 +105,14 @@ class SubrogationReceipt(models.Model):
         self = self.sudo()
         sequence = 1
         rows = []
-        for move in self.move_ids:
-            partner = move.partner_id.commercial_partner_id
+        # TODO
+        for line in self.line_ids:
+            move = line.move_id
+            partner = line.move_id.partner_id.commercial_partner_id
             sequence += 1
             name = pad(move.name, 30, position="left")
-            p_type = get_type_piece(move, move.journal_id.type)
+            piece = pad(move.name, 30, position="left")
+            p_type = get_type_piece(line)
             balance = 0
             total = move.amount_total_in_currency_signed
             info = {
@@ -150,7 +166,8 @@ def get_piece_factor(name, p_type):
     return name[:30]
 
 
-def get_type_piece(move, journal_type):
+def get_type_piece(move):
+    journal_type = move.journal_id.type
     p_type = False
     move_type = move.move_type
     if move_type == "entry":
