@@ -45,6 +45,7 @@ class SubrogationReceipt(models.Model):
     expense_untaxed_amount = fields.Float(tracking=True, help="")
     expense_tax_amount = fields.Float(tracking=True, help="")
     holdback_amount = fields.Float(tracking=True, help="")
+    balance = fields.Monetary(currency_field="currency_id",readonly=True)
     company_id = fields.Many2one(
         comodel_name="res.company", string="Company", readonly=True, required=True
     )
@@ -178,6 +179,7 @@ class SubrogationReceipt(models.Model):
                 "domain": "[('id', 'in', %s)]" % subr_ids,
             }
 
+            action = self.env[action["type"]].create(action)
             if missing_journals:
                 message = (
                     "Missing bank journal for %s and currency %s to finish process"
@@ -186,7 +188,6 @@ class SubrogationReceipt(models.Model):
                         missing_journals[0].currency_id.name,
                     )
                 )
-                action = self.env[action["type"]].create(action)
                 raise RedirectWarning(
                     _(message), action.id, _("See created subrogations")
                 )
@@ -200,7 +201,7 @@ class SubrogationReceipt(models.Model):
                         "Subrogation Receipts have been created",
                     ),
                     "sticky": True,
-                    "next": action,
+                    "next": action.id,
                 },
             }
         else:

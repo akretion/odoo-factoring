@@ -49,7 +49,7 @@ class ResCompany(models.Model):
             # if k in ("type", "res_model", "target", "view_mode")
         }
         action["domain"] = "[('id', 'in', %s)]" % bpce_journals.ids
-        action["domain"] = "{'search_factor': 1}"
+        action["context"] = "{'search_factor': 1}"
         action["view_mode"] = "tree,form"
         action["name"] = "Journaux BPCE configurés"
         action_id=self.env.ref("account.action_account_journal_form").id

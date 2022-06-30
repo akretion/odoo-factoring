@@ -27,6 +27,7 @@
                         <field name="factor_type"/>
                         <field name="date"/>
                         <field name="statement_date"/>
+                        <field name="balance" widget="monetary" options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                     <group name="right">

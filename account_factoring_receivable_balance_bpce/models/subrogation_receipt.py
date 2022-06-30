@@ -31,6 +31,7 @@ class SubrogationReceipt(models.Model):
         }
 
     def _prepare_factor_file_data_bpce(self):
+        self.ensure_one()
         if not self.company_id.bpce_factor_code:
             raise UserError(
                 "Vous devez mettre le code du factor dans la société '%s'.\n"
@@ -39,13 +40,14 @@ class SubrogationReceipt(models.Model):
         if not self.statement_date:
             raise UserError("Vous devez spécifier la date du dernier relevé")
         body, max_row, balance = self._get_bpce_body()
+        max_row += 1
         header = self._get_bpce_header(max_row)
         check_column_size(header)
         ender = self._get_bpce_ender(max_row, balance)
         check_column_size(ender)
-        raw_data = ("%s%s%s%s%s" % (header, RETURN, body, RETURN, ender)).replace(
-            "False", "    "
-        )
+        raw_data = (
+            "%s%s%s%s%s%s" % (header, RETURN, body, RETURN, ender, RETURN)
+        ).replace("False", "    ")
         data = clean_string(raw_data)
         # check there is no regression in colmuns position
         check_column_position(raw_data, self.factor_journal_id, False)
@@ -56,6 +58,11 @@ class SubrogationReceipt(models.Model):
             debug(raw_data, "_raw")
             debug(data)
             raise UserError("See files /odoo/subrog*.txt")
+        total_in_erp = sum(self.line_ids.mapped("amount_currency"))
+        if round(balance, 2) != round(total_in_erp, 2):
+            raise UserError("Erreur dans le calul de la balance :"
+                "\n - erp : %s\n - fichier : %s" % (total_in_erp, balance))
+        self.write({"balance": balance})
         # non ascii chars are replaced
         data = bytes(data, "ascii", "replace").replace(b"?", b" ")
         return base64.b64encode(data)
@@ -76,7 +83,7 @@ class SubrogationReceipt(models.Model):
     def _get_bpce_header(self, max_row):
         self = self.sudo()
         info = {
-            "seq": pad(max_row + 2, 6, 0),
+            "seq": pad(max_row, 6, 0),
             "code": pad(self.company_id.bpce_factor_code, 6, 0),
             "devise": self.factor_journal_id.currency_id.name,
             "name": pad(self.company_id.partner_id.name, 25),
@@ -93,7 +100,7 @@ class SubrogationReceipt(models.Model):
     def _get_bpce_ender(self, max_row, balance):
         self = self.sudo()
         info = {
-            "seq": pad(max_row + 2, 6, 0),
+            "seq": pad(max_row, 6, 0),
             "code": pad(self.company_id.bpce_factor_code, 6, 0),
             "name": pad(self.company_id.partner_id.name[:25], 25),
             "balance": pad(round(balance * 100), 13, 0),
@@ -105,15 +112,14 @@ class SubrogationReceipt(models.Model):
         self = self.sudo()
         sequence = 1
         rows = []
-        # TODO
+        balance = 0
         for line in self.line_ids:
             move = line.move_id
             partner = line.move_id.partner_id.commercial_partner_id
             sequence += 1
             name = pad(move.name, 30, position="left")
-            piece = pad(move.name, 30, position="left")
-            p_type = get_type_piece(line)
-            balance = 0
+            # piece = pad(move.name, 30, position="left")
+            p_type = get_type_piece(move)
             total = move.amount_total_in_currency_signed
             info = {
                 "seq": pad(sequence, 6, 0),
