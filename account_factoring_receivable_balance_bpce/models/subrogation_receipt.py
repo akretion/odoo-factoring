@@ -40,7 +40,6 @@ class SubrogationReceipt(models.Model):
         if not self.statement_date:
             raise UserError("Vous devez spécifier la date du dernier relevé")
         body, max_row, balance = self._get_bpce_body()
-        max_row += 1
         header = self._get_bpce_header(max_row)
         check_column_size(header)
         ender = self._get_bpce_ender(max_row, balance)
