@@ -298,3 +298,18 @@ class AccountMove(models.Model):
             ).reconcile()
 
         self.payment_state_with_factor = "factor_paid"
+
+    def button_cancel_factor(self):
+        for inv in self:
+            if inv.factor_payment_id:
+                inv.factor_payment_id.button_cancel()
+                inv.factor_payment_id.mapped('line_ids').remove_move_reconcile()
+            if (
+                inv.factor_transfer_id
+                and inv.factor_transfer_id.state in ('draft', 'posted')
+            ):
+                inv.factor_transfer_id.button_cancel()
+                inv.factor_transfer_id.mapped('line_ids').remove_move_reconcile()
+                inv.payment_state = "not_paid"
+                inv.payment_mode_id = False
+
