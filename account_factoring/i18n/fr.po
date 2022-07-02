@@ -16,6 +16,16 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: account_factoring
+#: model:ir.model.fields.selection,name:account_factoring.selection__account_journal__factor_validation__automatic
+msgid "Automatic"
+msgstr "Automatique"
+
+#. module: account_factoring
+#: model_terms:ir.ui.view,arch_db:account_factoring.account_move_form_view
+msgid "Cancel Factor Transfer/Payment"
+msgstr "Annuler Transfer/Paiement Factor"
+
+#. module: account_factoring
 #: model:ir.model,name:account_factoring.model_res_partner
 msgid "Contact"
 msgstr "Contact"
@@ -154,6 +164,11 @@ msgid "Factor Transfer"
 msgstr "Transfert au Factor"
 
 #. module: account_factoring
+#: model:ir.model.fields,field_description:account_factoring.field_account_journal__factor_validation
+msgid "Factor Validation"
+msgstr "Validation Factor"
+
+#. module: account_factoring
 #: model_terms:ir.ui.view,arch_db:account_factoring.account_journal_form_view
 #: model_terms:ir.ui.view,arch_db:account_factoring.account_move_form_view
 #: model_terms:ir.ui.view,arch_db:account_factoring.res_partner_form_view
@@ -227,6 +242,11 @@ msgid "Limit Holdback"
 msgstr "RES"
 
 #. module: account_factoring
+#: model:ir.model.fields.selection,name:account_factoring.selection__account_journal__factor_validation__manual
+msgid "Manual"
+msgstr "Manuel"
+
+#. module: account_factoring
 #: model:ir.model.fields,help:account_factoring.field_account_bank_statement_line__factor_payment_id
 #: model:ir.model.fields,help:account_factoring.field_account_move__factor_payment_id
 #: model:ir.model.fields,help:account_factoring.field_account_payment__factor_payment_id
@@ -282,6 +302,11 @@ msgstr "Enregistrer un paiement"
 #: model:ir.model.fields.selection,name:account_factoring.selection__account_move__payment_state_with_factor__reversed
 msgid "Reversed"
 msgstr ""
+
+#. module: account_factoring
+#: model:ir.model.fields.selection,name:account_factoring.selection__account_move__payment_state_with_factor__submitted_to_factor
+msgid "Submitted to Factor"
+msgstr "Soumis au Factor"
 
 #. module: account_factoring
 #: model:ir.model.fields.selection,name:account_factoring.selection__account_move__payment_state_with_factor__to_transfer_to_factor
