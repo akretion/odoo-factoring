@@ -60,7 +60,7 @@
     </record>
 
     <record
-        id="factor_payment_mode"
+        id="factor_payment_mode-refund"
         model="account.payment.mode"
     >
         <field name="name" >FACT-R</field>
