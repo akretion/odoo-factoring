@@ -44,7 +44,7 @@ class AccountMove(models.Model):
         copy=False,
     )
 
-    @api.depends("payment_state", "payment_mode_id", "factor_transfer_id", "factor_payment_id")
+    @api.depends("payment_state", "payment_mode_id", "factor_transfer_id", "factor_payment_id", "factor_transfer_id.state", "factor_payment_id.state")
     def _compute_payment_state_with_factor(self):
         for move in self:
             if (
@@ -61,7 +61,10 @@ class AccountMove(models.Model):
                     else:
                         move.payment_state_with_factor = "to_transfer_to_factor"
                 elif move.payment_state == "paid":
-                    move.payment_state_with_factor = "transferred_to_factor"
+                    if move.factor_payment_id and move.factor_payment_id.state == "posted":
+                        move.payment_state_with_factor = "factor_paid"
+                    else:
+                        move.payment_state_with_factor = "transferred_to_factor"
                 else:
                     move.payment_state_with_factor = move.payment_state
             else:
