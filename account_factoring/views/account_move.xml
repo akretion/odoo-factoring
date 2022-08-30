@@ -42,12 +42,12 @@
                     id="factoring"
                     string="Factoring"
                     name="factoring"
-                    attrs="{'invisible': [('factor_transfer_id', '=', False)]}"
+                    attrs="{'invisible': [('payment_state_with_factor', 'not in', ('submitted_to_factor', 'transferred_to_factor', 'factor_paid'))]}"
                 >
                     <group id="factoring_group">
                         <group>
-                            <field name="factor_transfer_id" />
-                            <field name="factor_payment_id" />
+                  			    <field name="factor_transfer_id" attrs="{'required': [('payment_state_with_factor', 'in', ('submitted_to_factor', 'transferred_to_factor', 'factor_paid'))]}"/>
+                  			    <field name="factor_payment_id" attrs="{'invisible': [('payment_state_with_factor', 'not in', ('factor_paid', 'transferred_to_factor'))], 'required': [('payment_state_with_factor', 'in', ('factor_paid'))]}" />
                             <button
                               name="button_cancel_factor"
                               type="object"
