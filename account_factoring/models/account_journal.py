@@ -222,7 +222,7 @@ class AccountJournal(models.Model):
         locale = get_lang(self.env).code
 
         #starting point of the graph is the last statement
-        last_stmt = self._get_last_bank_statement(domain=[('move_id.state', '=', 'posted')])
+        last_stmt = self._get_last_bank_statement(domain=[('state', 'in', ['posted', 'confirm'])])
 
         last_balance = last_stmt and last_stmt.balance_end_real or 0
         #then we subtract the total amount of bank statement lines per day to get the previous points
