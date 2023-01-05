@@ -4,7 +4,6 @@
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
 
 
 class ResPartner(models.Model):

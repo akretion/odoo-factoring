@@ -2,7 +2,7 @@
 # © 2022 Alexis DE LATTRE @ Akretion
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import api, fields, models, Command
+from odoo import Command, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tests.common import Form
 

@@ -8,7 +8,6 @@ import re
 from odoo import api, fields, models, tools
 from odoo.exceptions import UserError
 
-
 FORMAT_VERSION = "7.0"
 RETURN = "\r\n"
 

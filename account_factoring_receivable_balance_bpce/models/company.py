@@ -4,11 +4,8 @@
 
 import logging
 
-from odoo import _, api, fields, models, Command
-from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
-from odoo.exceptions import UserError, RedirectWarning
-from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
-
+from odoo import _, api, fields, models
+from odoo.exceptions import RedirectWarning, UserError
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +26,7 @@ class ResCompany(models.Model):
         bpce_journals = self.env["account.journal"].search(
             [("factor_type", "=", "bpce"), ("company_id", "=", self.id)]
         )
-        action_id=self.env.ref("account.action_account_journal_form").id
+        action_id = self.env.ref("account.action_account_journal_form").id
         active_ids = ",".join([str(x) for x in bpce_journals.ids])
 
         return {
@@ -39,11 +36,13 @@ class ResCompany(models.Model):
                 "title": "Configuration réussie",
                 "type": "success",  # warning/success
                 "message": "Consulter les journaux et comptes configurés",
-                "links": [{
-                    "label": "Voir les journaux",
-                    "url": f"#action={action_id}&model=account.journal&active_ids={active_ids}",
-                }],
-                "sticky": True,  #True/False will display for few seconds if false
+                "links": [
+                    {
+                        "label": "Voir les journaux",
+                        "url": f"#action={action_id}&model=account.journal&active_ids={active_ids}",
+                    }
+                ],
+                "sticky": True,  # True/False will display for few seconds if false
                 "next": action_id,  # {'type': 'ir.actions.act_window_close'},  # Refresh the form to show the key
             },
         }
