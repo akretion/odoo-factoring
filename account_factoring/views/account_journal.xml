@@ -9,7 +9,10 @@
         <field name="inherit_id" ref="account.view_account_journal_form" />
         <field name="arch" type="xml">
             <field name="type" position="after">
-    		    <field name="is_factor" attrs="{'invisible': [('type', '!=', 'bank')]}" />
+                <field
+                    name="is_factor"
+                    attrs="{'invisible': [('type', '!=', 'bank')]}"
+                />
             </field>
             <page name="advanced_settings" position="after">
                 <page
