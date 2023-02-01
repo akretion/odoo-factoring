@@ -3,12 +3,14 @@
 
 import json
 import random
-from babel.dates import format_date
 from datetime import datetime, timedelta
+
+from babel.dates import format_date
+
 from odoo import api, fields, models
 from odoo.release import version
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
-from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
+from odoo.tools.misc import formatLang, get_lang
 
 
 class AccountJournal(models.Model):
@@ -32,19 +34,28 @@ class AccountJournal(models.Model):
     factor_fee_account_id = fields.Many2one(
         "account.account",
         string="Factor Fee Account",
-        domain="[('internal_type', '=', 'other'), ('internal_group', '=', 'expense'), ('deprecated', '=', False), ('company_id', '=', current_company_id)]",
+        domain=(
+            "[('internal_type', '=', 'other'), ('internal_group', '=', 'expense'), "
+            "('deprecated', '=', False), ('company_id', '=', current_company_id)]"
+        ),
     )
     factor_holdback_account_id = fields.Many2one(
         "account.account",
         string="Factor Holdback Account",
         help="Proportional holdback",
-        domain="[('internal_type', '=', 'other'), ('deprecated', '=', False), ('company_id', '=', current_company_id)]",
+        domain=(
+            "[('internal_type', '=', 'other'), ('deprecated', '=', False), "
+            "('company_id', '=', current_company_id)]"
+        ),
     )
     factor_limit_holdback_account_id = fields.Many2one(
         "account.account",
         string="Factor Limit Holdback Account",
         help="Holdback when the customer credit is over the limit",
-        domain="[('internal_type', '=', 'other'), ('deprecated', '=', False), ('company_id', '=', current_company_id)]",
+        domain=(
+            "[('internal_type', '=', 'other'), ('deprecated', '=', False), "
+            "('company_id', '=', current_company_id)]"
+        ),
     )
     factor_tax_id = fields.Many2one(
         "account.tax",
@@ -141,10 +152,7 @@ class AccountJournal(models.Model):
                 )["balance"]
             else:
                 journal.factor_limit_holdback_balance = 0
-            if (
-                partner
-                and result.get(partner.property_account_receivable_id.id)
-            ):
+            if partner and result.get(partner.property_account_receivable_id.id):
                 journal.factor_customer_credit = result.get(
                     partner.property_account_receivable_id.id,
                 )["debit"]
@@ -193,13 +201,15 @@ class AccountJournal(models.Model):
         )
         return action
 
-# ================ Dashboards
+    # ================ Dashboards
 
     def _kanban_dashboard_graph(self):
         super()._kanban_dashboard_graph()
         for journal in self:
             if journal.is_factor:
-                journal.kanban_dashboard_graph = json.dumps(journal.get_factor_line_graph_data())
+                journal.kanban_dashboard_graph = json.dumps(
+                    journal.get_factor_line_graph_data()
+                )
 
     def get_factor_line_graph_data(self):
         """
@@ -209,37 +219,38 @@ class AccountJournal(models.Model):
         currency = self.currency_id or self.company_id.currency_id
 
         def build_graph_data(date, amount):
-            #display date in locale format
-            name = format_date(date, 'd LLLL Y', locale=locale)
-            short_name = format_date(date, 'd MMM', locale=locale)
-            return {'x':short_name,'y': amount, 'name':name}
+            # display date in locale format
+            name = format_date(date, "d LLLL Y", locale=locale)
+            short_name = format_date(date, "d MMM", locale=locale)
+            return {"x": short_name, "y": amount, "name": name}
 
         self.ensure_one()
-        BankStatement = self.env['account.bank.statement']
         data = []
         today = datetime.today()
         last_month = today + timedelta(days=-30)
         locale = get_lang(self.env).code
 
-        #starting point of the graph is the last statement
-        last_stmt = self._get_last_bank_statement(domain=[('state', 'in', ['posted', 'confirm'])])
+        # starting point of the graph is the last statement
+        last_stmt = self._get_last_bank_statement(
+            domain=[("state", "in", ["posted", "confirm"])]
+        )
 
-        last_balance = last_stmt and last_stmt.balance_end_real or 0
-        #then we subtract the total amount of bank statement lines per day to get the previous points
-        #(graph is drawn backward)
+        # then we subtract the total amount of bank statement lines per day to get
+        # the previous points
+        # (graph is drawn backward)
         date = today
         amount = self.factor_balance
         data.append(build_graph_data(today, amount))
         account_ids = (
             self.mapped("default_account_id").ids
-#                + self.mapped("factor_holdback_account_id").ids
-#                + self.mapped("factor_limit_holdback_account_id").ids
+            #                + self.mapped("factor_holdback_account_id").ids
+            #                + self.mapped("factor_limit_holdback_account_id").ids
         )
-        payment_modes = self.env['account.payment.mode'].search(
-            [('fixed_journal_id', 'in', self.ids)]
+        payment_modes = self.env["account.payment.mode"].search(
+            [("fixed_journal_id", "in", self.ids)]
         )
 
-        query = '''
+        query = """
             SELECT move.date, sum(line.balance) as amount
             FROM account_move_line line
             JOIN account_move move ON line.move_id = move.id
@@ -252,21 +263,32 @@ class AccountJournal(models.Model):
             AND line.parent_state='posted'
             GROUP BY move.date
             ORDER BY move.date desc
-        '''
-        self.env.cr.execute(query, (self.id, tuple(account_ids), tuple(payment_modes.ids) or (0,), last_month, today))
+        """
+        self.env.cr.execute(
+            query,
+            (
+                self.id,
+                tuple(account_ids),
+                tuple(payment_modes.ids) or (0,),
+                last_month,
+                today,
+            ),
+        )
         query_result = self.env.cr.dictfetchall()
         for val in query_result:
-            date = val['date']
-            if date != today.strftime(DF):  # make sure the last point in the graph is today
+            date = val["date"]
+            if date != today.strftime(
+                DF
+            ):  # make sure the last point in the graph is today
                 data[:0] = [build_graph_data(date, amount)]
-            amount = currency.round(val['amount'])
+            amount = currency.round(val["amount"])
 
         # make sure the graph starts 1 month ago
         if date.strftime(DF) != last_month.strftime(DF):
             data[:0] = [build_graph_data(last_month, amount)]
 
         [graph_title, graph_key] = self._graph_title_and_key()
-        color = '#875A7B' if 'e' in version else '#7c7bad'
+        color = "#875A7B" if "e" in version else "#7c7bad"
 
         is_sample_data = not last_stmt and len(query_result) == 0
         if is_sample_data:
@@ -275,31 +297,60 @@ class AccountJournal(models.Model):
                 current_date = today + timedelta(days=-i)
                 data.append(build_graph_data(current_date, random.randint(-5, 15)))
 
-        return [{'values': data, 'title': graph_title, 'key': graph_key, 'area': True, 'color': color, 'is_sample_data': is_sample_data}]
+        return [
+            {
+                "values": data,
+                "title": graph_title,
+                "key": graph_key,
+                "area": True,
+                "color": color,
+                "is_sample_data": is_sample_data,
+            }
+        ]
 
     def get_journal_dashboard_datas(self):
         res = super().get_journal_dashboard_datas()
         currency = self.currency_id or self.company_id.currency_id
         if self.is_factor:
-            to_transfer = self.env['account.move'].search([('payment_state_with_factor', '=', 'to_transfer_to_factor')])
+            to_transfer = self.env["account.move"].search(
+                [("payment_state_with_factor", "=", "to_transfer_to_factor")]
+            )
             number_to_transfer = len(to_transfer)
-            sum_to_transfer = sum(to_transfer.mapped('amount_total'))
-            waiting_payment = self.env['account.move'].search([('payment_state_with_factor', '=', 'transferred_to_factor')])
+            sum_to_transfer = sum(to_transfer.mapped("amount_total"))
+            waiting_payment = self.env["account.move"].search(
+                [("payment_state_with_factor", "=", "transferred_to_factor")]
+            )
             number_waiting_payment = len(waiting_payment)
-            sum_waiting_payment = sum(waiting_payment.mapped('amount_total'))
-            total_holdback = self.factor_holdback_balance + self.factor_limit_holdback_balance
+            sum_waiting_payment = sum(waiting_payment.mapped("amount_total"))
+            total_holdback = (
+                self.factor_holdback_balance + self.factor_limit_holdback_balance
+            )
         else:
             number_to_transfer = 0
             sum_to_transfer = 0
             number_waiting_payment = 0
             sum_waiting_payment = 0
             total_holdback = 0
-        res.update({
-            'is_factor': self.is_factor,
-            'total_holdback': formatLang(self.env, currency.round(total_holdback) + 0.0, currency_obj=currency),
-            'number_to_transfer': number_to_transfer,
-            'sum_to_transfer': formatLang(self.env, currency.round(sum_to_transfer) + 0.0, currency_obj=currency),
-            'number_waiting_payment': number_waiting_payment,
-            'sum_waiting_payment': formatLang(self.env, currency.round(sum_waiting_payment) + 0.0, currency_obj=currency),
-        })
+        res.update(
+            {
+                "is_factor": self.is_factor,
+                "total_holdback": formatLang(
+                    self.env,
+                    currency.round(total_holdback) + 0.0,
+                    currency_obj=currency,
+                ),
+                "number_to_transfer": number_to_transfer,
+                "sum_to_transfer": formatLang(
+                    self.env,
+                    currency.round(sum_to_transfer) + 0.0,
+                    currency_obj=currency,
+                ),
+                "number_waiting_payment": number_waiting_payment,
+                "sum_waiting_payment": formatLang(
+                    self.env,
+                    currency.round(sum_waiting_payment) + 0.0,
+                    currency_obj=currency,
+                ),
+            }
+        )
         return res
