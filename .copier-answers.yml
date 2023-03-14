@@ -1,5 +1,5 @@
 # Do NOT update manually; changes here will be overwritten by Copier
-_commit: v1.14.0
+_commit: v1.14.2
 _src_path: gh:oca/oca-addons-repo-template
 ci: GitHub
 dependency_installation_mode: PIP
@@ -9,16 +9,15 @@ github_ci_extra_env: {}
 github_enable_codecov: true
 github_enable_makepot: true
 github_enable_stale_action: true
-github_enforce_dev_status_compatibility: false
+github_enforce_dev_status_compatibility: true
 include_wkhtmltopdf: false
-odoo_version: 15.0
+odoo_version: 16.0
 org_name: Akretion
 org_slug: Akretion
 rebel_module_groups: []
 repo_description: Accounts Receivable Factoring for Odoo
 repo_name: Odoo Factoring
-repo_slug: https://github.com/akretion/odoo-factoring/tree/15.0
+repo_slug: https://github.com/akretion/odoo-factoring/tree/16.0
 repo_website: https://github.com/akretion/odoo-factoring
 travis_apt_packages: []
 travis_apt_sources: []
-

@@ -1,8 +1,8 @@
 
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
-[![Pre-commit Status](https://github.com/Akretion/https://github.com/akretion/odoo-factoring/tree/15.0/actions/workflows/pre-commit.yml/badge.svg?branch=15.0)](https://github.com/Akretion/https://github.com/akretion/odoo-factoring/tree/15.0/actions/workflows/pre-commit.yml?query=branch%3A15.0)
-[![Build Status](https://github.com/Akretion/https://github.com/akretion/odoo-factoring/tree/15.0/actions/workflows/test.yml/badge.svg?branch=15.0)](https://github.com/Akretion/https://github.com/akretion/odoo-factoring/tree/15.0/actions/workflows/test.yml?query=branch%3A15.0)
-[![codecov](https://codecov.io/gh/Akretion/https://github.com/akretion/odoo-factoring/tree/15.0/branch/15.0/graph/badge.svg)](https://codecov.io/gh/Akretion/https://github.com/akretion/odoo-factoring/tree/15.0)
+[![Pre-commit Status](https://github.com/https://github.com/akretion/odoo-factoring/https://github.com/akretion/odoo-factoring/tree/16.0/actions/workflows/pre-commit.yml/badge.svg?branch=16.0)](https://github.com/https://github.com/akretion/odoo-factoring/https://github.com/akretion/odoo-factoring/tree/16.0/actions/workflows/pre-commit.yml?query=branch%3A16.0)
+[![Build Status](https://github.com/https://github.com/akretion/odoo-factoring/https://github.com/akretion/odoo-factoring/tree/16.0/actions/workflows/test.yml/badge.svg?branch=16.0)](https://github.com/https://github.com/akretion/odoo-factoring/https://github.com/akretion/odoo-factoring/tree/16.0/actions/workflows/test.yml?query=branch%3A16.0)
+[![codecov](https://codecov.io/gh/https://github.com/akretion/odoo-factoring/https://github.com/akretion/odoo-factoring/tree/16.0/branch/16.0/graph/badge.svg)](https://codecov.io/gh/https://github.com/akretion/odoo-factoring/https://github.com/akretion/odoo-factoring/tree/16.0)
 <!-- /!\ Non OCA Context : Set here the badge of your translation instance. -->
 
 <!-- /!\ do not modify above this line -->
