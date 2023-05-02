@@ -28,12 +28,12 @@
                     groups="account.group_account_invoice"
                 />
             </button>
-	    <field name="payment_mode_id" position="attributes">
-		<attribute
+        <field name="payment_mode_id" position="attributes">
+        <attribute
                     name="attrs"
-		>{'readonly': ['|', ('state', 'not in', ['draft', 'posted']), ('payment_state', '!=', 'not_paid')], 'invisible': [('move_type', 'not in', ('out_invoice','out_refund','in_invoice','in_refund'))]}
-	</attribute>
-	    </field>
+                >{'readonly': ['|', ('state', 'not in', ['draft', 'posted']), ('payment_state', '!=', 'not_paid')], 'invisible': [('move_type', 'not in', ('out_invoice','out_refund','in_invoice','in_refund'))]}
+    </attribute>
+        </field>
             <field name="payment_state" position="after">
                  <field name="payment_state_with_factor" invisible="1" />
             </field>
@@ -46,13 +46,19 @@
                 >
                     <group id="factoring_group">
                         <group>
-                  			    <field name="factor_transfer_id" attrs="{'required': [('payment_state_with_factor', 'in', ('submitted_to_factor', 'transferred_to_factor', 'factor_paid'))]}"/>
-                  			    <field name="factor_payment_id" attrs="{'invisible': [('payment_state_with_factor', 'not in', ('factor_paid', 'transferred_to_factor'))], 'required': [('payment_state_with_factor', 'in', ('factor_paid'))]}" />
+                                <field
+                                name="factor_transfer_id"
+                                attrs="{'required': [('payment_state_with_factor', 'in', ('submitted_to_factor', 'transferred_to_factor', 'factor_paid'))]}"
+                            />
+                                <field
+                                name="factor_payment_id"
+                                attrs="{'invisible': [('payment_state_with_factor', 'not in', ('factor_paid', 'transferred_to_factor'))], 'required': [('payment_state_with_factor', 'in', ('factor_paid'))]}"
+                            />
                             <button
-                              name="button_cancel_factor"
-                              type="object"
-                              string="Cancel Factor Transfer/Payment"
-                              groups="account.group_account_invoice"
+                                name="button_cancel_factor"
+                                type="object"
+                                string="Cancel Factor Transfer/Payment"
+                                groups="account.group_account_invoice"
                             />
                         </group>
                     </group>
@@ -131,14 +137,24 @@
     </record>
 
     <record id="action_account_moves_journal_factor" model="ir.actions.act_window">
-        <field name="context">{'journal_type':'general', 'search_default_group_by_move': 1, 'search_default_posted':1, 'search_default_factor_filter':1, 'name_groupby':1, 'expand': 1}</field>
+        <field
+            name="context"
+        >{'journal_type':'general', 'search_default_group_by_move': 1, 'search_default_posted':1, 'search_default_factor_filter':1, 'name_groupby':1, 'expand': 1}</field>
         <field name="name">Factor</field>
         <field name="res_model">account.move.line</field>
-        <field name="domain">[('display_type', 'not in', ('line_section', 'line_note'))]</field>
-        <field name="view_id" ref="account.view_move_line_tree_grouped_misc"/>
+        <field
+            name="domain"
+        >[('display_type', 'not in', ('line_section', 'line_note'))]</field>
+        <field name="view_id" ref="account.view_move_line_tree_grouped_misc" />
         <field name="view_mode">tree,pivot,graph</field>
     </record>
 
-    <menuitem id="menu_action_account_moves_journal_factor" action="action_account_moves_journal_factor" groups="account.group_account_readonly" parent="account.menu_finance_entries_accounting_journals" sequence="10"/>
+    <menuitem
+        id="menu_action_account_moves_journal_factor"
+        action="action_account_moves_journal_factor"
+        groups="account.group_account_readonly"
+        parent="account.menu_finance_entries_accounting_journals"
+        sequence="10"
+    />
 
 </odoo>

@@ -48,7 +48,7 @@ Example in France for FactoFrance:
 8. Factor Holdback %: 10%
 9. Factor Limit Holdback Account: create a new chart account 467020 like 467000, but mark it a reconciable.
 
-	
+    
 
 Create a factor payment mode
 ============================

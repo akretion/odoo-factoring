@@ -43,7 +43,7 @@ class ResPartner(models.Model):
             accounts.append(journal.factor_holdback_account_id.id)
             accounts.append(journal.factor_limit_holdback_account_id.id)
         action["domain"] = (
-            "[('full_reconcile_id', '=', False), ('account_id', 'in', %s), ('partner_id', '=', %s)]"
-            % (accounts, self.id)
-        )
+            "[('full_reconcile_id', '=', False), ('account_id', 'in', %s), "
+            "('partner_id', '=', %s)]"
+        ) % (accounts, self.id)
         return action

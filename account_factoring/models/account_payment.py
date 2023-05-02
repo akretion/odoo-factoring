@@ -189,19 +189,8 @@ class AccountPayment(models.Model):
         if self._context.get("factor_move_synchronization"):
             for pay in self.with_context(skip_account_move_synchronization=True):
                 if pay.journal_id.is_factor:
-                    # TODO adjust and test!
-                    move = pay.move_id
-                    payment_vals_to_write = {
-                        # TODO ajust!
-                        "amount": abs(liquidity_amount),
-                        "partner_type": partner_type,
-                        "currency_id": liquidity_lines.currency_id.id,
-                        "destination_account_id": counterpart_lines.account_id.id,
-                        "partner_id": liquidity_lines.partner_id.id,
-                    }
-                    pay.write(
-                        move._cleanup_write_orm_values(pay, payment_vals_to_write)
-                    )
+                    pass
+                    # TODO implement? see super method
         else:
             # if we did nothing bank statement transfer from factor to bank account would fail
             # because factor accounts are not receivable nor payable.

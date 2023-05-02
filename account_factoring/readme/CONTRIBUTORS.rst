@@ -1,1 +1,1 @@
-* Raphaël Valyi <raphael.valyi@akretion.com.>
+* Raphaël Valyi <raphael.valyi@akretion.com>
