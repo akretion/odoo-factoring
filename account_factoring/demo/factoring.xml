@@ -103,7 +103,7 @@
             model="account.move.line"
             eval="obj().search([('move_id', 'in', [
                 ref('factor_demo_invoice_1'),
-            ])]).ids"
+            ]), ('parent_state', '=', 'draft')]).ids"
         />
         </function>
 
@@ -121,8 +121,9 @@
         </function>
 
         <function model="account.move" name="action_post">
-            <value eval="[
-                ref('factor_demo_invoice_1'),
-            ]" />
+           <value
+            model="account.move"
+            eval="obj().search([('id', 'in', [ref('factor_demo_invoice_1'),]), ('state', '=', 'draft')]).ids"
+        />
         </function>
 </odoo>

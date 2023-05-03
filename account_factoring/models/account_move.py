@@ -151,7 +151,7 @@ class AccountMove(models.Model):
                 ).reconcile()
         return res
 
-    def button_factor_paid(self):
+    def button_factor_paid(self, is_test=False):
         """
         Compute the proper holdback amounts to release.
         The holdback proportional to the invoice amount is always fully
@@ -293,7 +293,8 @@ class AccountMove(models.Model):
 
         # now we try to reconcile limit holdback lines:
         # required to test if limit_holdback is zero later
-        self.env.cr.commit()  # pylint: disable=invalid-commit
+        if not is_test:
+            self.env.cr.commit()  # pylint: disable=invalid-commit
         self.env["account.journal"].flush(["factor_limit_holdback_balance"])
         balance_journal = self.factor_transfer_id.with_context(
             {"compute_factor_partner": self.partner_id}
