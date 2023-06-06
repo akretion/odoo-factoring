@@ -96,6 +96,16 @@
                     domain="[('payment_state_with_factor', '=', 'transferred_to_factor'), ('state', '=', 'posted')]"
                 />
             </xpath>
+            <filter name="paid" position="attributes">
+                <attribute
+                    name="domain"
+                >[('payment_state', '=', 'paid'), ('state', '=', 'posted'), ('payment_state_with_factor', '!=', 'transferred_to_factor')]</attribute>
+            </filter>
+            <filter name="unpaid" position="attributes">
+                <attribute
+                    name="domain"
+                >[('payment_state', '=', 'not_paid'), ('state', '=', 'posted'), ('payment_state_with_factor', '!=', 'to_transfer_to_factor')]</attribute>
+            </filter>
         </field>
     </record>
 
