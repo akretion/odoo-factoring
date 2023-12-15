@@ -12,7 +12,7 @@ class ResCompany(models.Model):
 
     factor_config_currency_id = fields.Many2one(
         comodel_name="res.currency",
-        string="Currency",
+        string="Factor Currency",
         help="Use to configure account and journal",
     )
 
