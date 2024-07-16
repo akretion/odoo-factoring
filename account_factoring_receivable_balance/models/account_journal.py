@@ -2,7 +2,19 @@
 # © 2022 Alexis DE LATTRE @ Akretion
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import logging
+
 from odoo import fields, models
+
+logger = logging.getLogger(__name__)
+
+logger.warning(
+    "\n\n\n     ACHTUNG !!!!!! This module'll have breaking changes in next weeks\n\n"
+)
+logger.warning(
+    "\n\n   Consider to check https://github.com/akretion/odoo-factoring/pull/21\n\n"
+)
+logger.warning("\n\n         Drop a comment to flag you use this module\n\n")
 
 
 class AccountJournal(models.Model):
