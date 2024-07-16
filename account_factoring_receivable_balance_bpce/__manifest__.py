@@ -19,7 +19,8 @@
     "data": [
         "views/partner.xml",
         "views/company.xml",
-        "views/config.xml",
     ],
-    "demo": [],
+    "demo": [
+        "views/company_demo.xml",
+    ],
 }
