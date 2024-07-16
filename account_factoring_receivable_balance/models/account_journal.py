@@ -20,7 +20,20 @@ logger.warning("\n\n         Drop a comment to flag you use this module\n\n")
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
-    factor_type = fields.Selection(string="Factor", selection_add=[("", "")])
+    factor_type = fields.Selection(string="Factor", selection=[("", "")])
+    factor_code = fields.Char(help="Account Number for factor company")
+    factor_start_date = fields.Date(
+        tracking=True,
+        help="No account move will be selected before this date",
+    )
+    factor_invoice_journal_ids = fields.Many2many(
+        string="Limit Factoring to Journals",
+        comodel_name="account.journal",
+        relation="account_journal_factor_invoice_rel",
+        column1="factor_journal_id",
+        column2="sale_journal_id",
+        help="Journals to limit Factoring to. Leave blank to allow all journals",
+    )
     factoring_receivable_account_id = fields.Many2one(
         comodel_name="account.account", string="Receivable Account"
     )

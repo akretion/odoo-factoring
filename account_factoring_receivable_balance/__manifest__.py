@@ -13,16 +13,13 @@
         "alexis-via",
     ],
     "depends": [
-        "base_factoring",
+        "account",
     ],
     "data": [
         "security/ir.model.access.csv",
         "security/misc.xml",
         "views/subrogation_receipt.xml",
         "views/account_journal.xml",
-        "views/company.xml",
     ],
-    "demo": [
-        "views/company_demo.xml",
-    ],
+    "demo": [],
 }
