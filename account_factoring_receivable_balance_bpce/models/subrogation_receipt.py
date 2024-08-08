@@ -78,15 +78,9 @@ class SubrogationReceipt(models.Model):
         return res
 
     @api.model
-    def _get_domain_for_factor(
-        self, factor_type, partner_selection_field=None, currency=None
-    ):
+    def _get_domain_for_factor(self):
         "Minimal override of the Account move lines"
-        domain = super()._get_domain_for_factor(
-            factor_type,
-            partner_selection_field=partner_selection_field,
-            currency=currency,
-        )
+        domain = super()._get_domain_for_factor()
         if self.env.company.bpce_start_date:
             domain = [("date", ">=", self.env.company.bpce_start_date)] + domain
         return domain
@@ -220,9 +214,9 @@ def bpce_date(date_field):
 
 def pad(string, pad, end=" ", position="right"):
     "Complete string by leading `end` string from `position`"
-    if isinstance(end, (int, float)):
+    if isinstance(end, int | float):
         end = str(end)
-    if isinstance(string, (int, float)):
+    if isinstance(string, int | float):
         string = str(string)
     if position == "right":
         string = string.rjust(pad, end)
