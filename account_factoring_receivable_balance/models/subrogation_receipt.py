@@ -5,6 +5,13 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+JOURNAL_DOMAIN = [("factor_type", "!=", False), ("type", "=", "general")]
+
+
+def journal_domain(self):
+    journal = self.env["account.journal"].search(JOURNAL_DOMAIN)
+    return len(journal) == 1 and journal.id or False
+
 
 class SubrogationReceipt(models.Model):
     _name = "subrogation.receipt"
@@ -17,7 +24,8 @@ class SubrogationReceipt(models.Model):
     factor_journal_id = fields.Many2one(
         comodel_name="account.journal",
         string="Journal",
-        domain="[('factor_type', '!=', False), ('type', '=', 'general')]",
+        domain=JOURNAL_DOMAIN,
+        default=lambda s: journal_domain(s),
         check_company=True,
         required=True,
     )
@@ -31,6 +39,7 @@ class SubrogationReceipt(models.Model):
     )
     target_date = fields.Date(
         help="All account moves line dates are lower or equal to this date",
+        default=fields.Date.today(),
         required=True,
         tracking=True,
     )
@@ -47,6 +56,7 @@ class SubrogationReceipt(models.Model):
         required=True,
         tracking=True,
     )
+    warn = fields.Text(readonly=True)
     expense_untaxed_amount = fields.Monetary(tracking=True, help="")
     expense_tax_amount = fields.Monetary(tracking=True, help="")
     holdback_amount = fields.Monetary(tracking=True, help="")
@@ -91,8 +101,8 @@ class SubrogationReceipt(models.Model):
     def _compute_display_name(self):
         for rec in self:
             rec.display_name = "{} {} {}".format(
-                rec.factor_type,
-                rec.currency_id.name,
+                rec.factor_journal_id._fields["factor_type"].selection[0][1],
+                rec.currency_id.name or "",
                 rec.date or rec._fields["state"].selection[0][1],
             )
 
@@ -118,22 +128,27 @@ class SubrogationReceipt(models.Model):
             ("move_id.partner_bank_id", "=", bank_journal.bank_account_id.id),
             ("move_id.partner_bank_id", "=", False),
         ]
-        domain += [
-            (
-                "move_id.currency_id",
-                "=",
-                (
-                    journal.currency_id
-                    and journal.currency_id.id
-                    or journal.company_id.currency_id.id
-                ),
-            )
-        ]
+        # domain += [
+        #     (
+        #         "move_id.currency_id",
+        #         "=",
+        #         (
+        #             journal.currency_id
+        #             and journal.currency_id.id
+        #             or journal.company_id.currency_id.id
+        #         ),
+        #     )
+        # ]
         if factor_journal.factor_start_date:
             domain.append(("date", ">=", factor_journal.factor_start_date))
-        invoice_journals = self.factor_journal_id.factor_invoice_journal_ids
-        if invoice_journals:
-            domain.append(("journal_id", "in", invoice_journals.ids))
+        if not self.factor_journal_id.factor_invoice_journal_ids:
+            raise UserError(
+                "Merci de définir les journaux sur lequels repose le factor "
+                f"sur le journal {self.factor_journal_id}"
+            )
+        domain.append(
+            ("journal_id", "in", self.factor_journal_id.factor_invoice_journal_ids.ids)
+        )
         return domain
 
     @api.model
@@ -147,6 +162,7 @@ class SubrogationReceipt(models.Model):
 
     def action_compute_lines(self):
         self.ensure_one()
+        self.warn = False
         self.line_ids.write({"subrogation_id": False})
         lines = self._get_factor_lines()
         lines.write({"subrogation_id": self.id})
@@ -156,7 +172,7 @@ class SubrogationReceipt(models.Model):
                 [
                     ("journal_id.factor_type", "=", self.factor_type),
                     ("journal_id.currency_id", "=", self.currency_id.id),
-                    ("state", "=", "confirm"),  # TODO confirm this line ?
+                    # ("state", "=", "confirm"),  # TODO confirm this line ?
                 ],
                 limit=1,
                 order="date DESC",
@@ -171,7 +187,7 @@ class SubrogationReceipt(models.Model):
         """Get matching bank journal
         You may override to have a dedicated mapping"""
         currency = self.factor_journal_id.currency_id
-        domain = [("type", "=", "bank"), ("factor_type", "=", self.factor_type)]
+        domain = [("type", "=", "general"), ("factor_type", "=", self.factor_type)]
         if currency:
             domain += [("currency_id", "=", currency.id)]
         res = self.env["account.journal"].search(domain, limit=1)
@@ -199,10 +215,11 @@ class SubrogationReceipt(models.Model):
     def action_confirm(self):
         for rec in self:
             if rec.state == "draft":
-                rec.state = "confirmed"
-                rec.date = fields.Date.today()
                 data = self._prepare_factor_file(rec.factor_type)
-                if data:
+                if data["datas"]:
+                    rec.state = "confirmed"
+                    rec.date = fields.Date.today()
+                    rec.warn = False
                     self.env["ir.attachment"].create(data)
 
     def action_post(self):

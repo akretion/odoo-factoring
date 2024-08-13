@@ -19,14 +19,3 @@ class AccountMoveLine(models.Model):
         string="Recipient Bank",
         help="Bank of the partner",
     )
-    partner_ref = fields.Char(string="Partn.", compute="_compute_partner_ref")
-
-    def _compute_partner_ref(self):
-        # TODO propose to upper repository branch
-        for rec in self:
-            if rec.partner_id:
-                rec.partner_ref = rec.partner_id.commercial_partner_id._get_factor_ref(
-                    rec.subrogation_id.factor_type
-                )
-            else:
-                rec.partner_ref = ""

@@ -9,12 +9,7 @@ class Partner(models.Model):
 
     factor_journal_id = fields.Many2one(
         comodel_name="account.journal",
+        company_dependent=True,
         domain="[('factor_type', '!=', False)]",
         help="Select the factoring service for this partner.",
     )
-
-    def _get_factor_ref(self, factor_type):
-        "Can be overrided in your factor module if required"
-        # TODO propose to upper repository branch
-        self.ensure_one()
-        return self.ref

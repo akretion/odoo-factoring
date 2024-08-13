@@ -1,10 +1,4 @@
 <odoo>
-    <menuitem
-        id="factoring_menu"
-        parent="account.menu_finance_entries"
-        sequence="50"
-        name="Factoring"
-    />
 
     <record id="view_account_journal_form" model="ir.ui.view">
         <field name="model">account.journal</field>
@@ -13,14 +7,19 @@
             <field name="type" position="after">
                 <field
                     name="factor_type"
-                    attrs="{'invisible': [('type', 'not in', ('misc'))]}"
+                    attrs="{'invisible': [('type', '!=', 'general')]}"
                 />
             </field>
             <xpath expr="//page[last()]" position="after">
-                <page name="factor" string="Factor" invisible="not factor_type">
+                <page
+                    name="factor"
+                    string="Factor"
+                    attrs="{'invisible':[('factor_type', '=', False)]}"
+                >
                     <group name="receivable_balance" string="Receivable Balance">
                         <group name="balance_left">
                             <field name="factor_code" />
+                            <field name="factor_code2" />
                             <field name="factoring_receivable_account_id" />
                             <field name="factoring_current_account_id" />
                             <field name="factoring_holdback_account_id" />

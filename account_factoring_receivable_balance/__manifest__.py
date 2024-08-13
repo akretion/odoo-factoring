@@ -18,8 +18,9 @@
     "data": [
         "security/ir.model.access.csv",
         "security/misc.xml",
-        "views/subrogation_receipt.xml",
         "views/account_journal.xml",
+        "views/subrogation_receipt.xml",
+        "views/partner.xml",
     ],
     "demo": [],
 }
