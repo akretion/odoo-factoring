@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+
+    <record id="view_partner_property_form" model="ir.ui.view">
+        <field name="model">res.partner</field>
+        <field
+            name="inherit_id"
+            ref="account_factoring_receivable_balance.view_partner_property_form"
+        />
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='factoring']" position="inside">
+                <field name="factor_bank_id" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="res_partner_view_search" model="ir.ui.view">
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="account.res_partner_view_search" />
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='supplier']" position="after">
+                   <filter
+                    string="Factor bank"
+                    name="factor_bank_id"
+                    domain="[('factor_bank_id','!=', 0)]"
+                />
+                   <filter
+                    string="Eurofactor Journal"
+                    name="factor_journal"
+                    domain="[('factor_journal_id', '!=', False)]"
+                />
+                   <filter
+                    string="Eurofactor Id"
+                    name="id_numbers"
+                    domain="[('id_numbers', '!=', False)]"
+                />
+                   <separator />
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

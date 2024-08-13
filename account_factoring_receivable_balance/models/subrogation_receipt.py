@@ -124,9 +124,9 @@ class SubrogationReceipt(models.Model):
                 "=",
                 factor_journal.id,
             ),
-            "|",
-            ("move_id.partner_bank_id", "=", bank_journal.bank_account_id.id),
-            ("move_id.partner_bank_id", "=", False),
+            # "|",
+            # ("move_id.partner_bank_id", "=", bank_journal.bank_account_id.id),
+            # ("move_id.partner_bank_id", "=", False),
         ]
         # domain += [
         #     (
@@ -166,6 +166,9 @@ class SubrogationReceipt(models.Model):
         self.line_ids.write({"subrogation_id": False})
         lines = self._get_factor_lines()
         lines.write({"subrogation_id": self.id})
+        if not lines:
+            domain = self._get_domain_for_factor()
+            self.warn = f"Le domaine ne ramène aucune donnée \n{domain}"
         vals = {"item_ids": [(6, 0, lines.ids)]}
         if not self.statement_date:
             statement = self.env["account.bank.statement"].search(

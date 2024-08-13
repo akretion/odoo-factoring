@@ -11,5 +11,6 @@ class Partner(models.Model):
         comodel_name="account.journal",
         company_dependent=True,
         domain="[('factor_type', '!=', False)]",
+        groups="account.group_account_manager",
         help="Select the factoring service for this partner.",
     )
