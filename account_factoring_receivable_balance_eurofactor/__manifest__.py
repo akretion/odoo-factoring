@@ -12,12 +12,12 @@
     ],
     "depends": [
         "account_factoring_receivable_balance",
-        "account_factoring_receivable_balance",
         "l10n_fr",
         "partner_identification",
     ],
     "data": [
         "views/partner.xml",
+        "views/account_journal.xml",
         "data/data.xml",
     ],
 }

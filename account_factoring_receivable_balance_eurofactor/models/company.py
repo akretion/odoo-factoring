@@ -144,8 +144,7 @@ class ResCompany(models.Model):
                 "type": "general",
                 "factor_type": FACTO_TYPE,
                 "code": FACTO_TYPE.upper(),
-                "factor_code": "12345",
-                "factor_code2": "12345",
+                "factor_data": self._populate_eurof_settings(),
                 "company_id": company.id,
                 "factoring_receivable_account_id": acc[f"4115{suffix}"].id,
                 "factoring_current_account_id": acc[f"4671{suffix}"].id,
@@ -155,6 +154,11 @@ class ResCompany(models.Model):
             }
         )
         return company
+
+    def _populate_eurof_settings(self):
+        return (
+            "contrat = 123456\nclient = 45678\nemetteurD = 54321\nemetteurE = 12345\n"
+        )
 
     def _get_factor_shortname(self):
         """Allow to customze account name

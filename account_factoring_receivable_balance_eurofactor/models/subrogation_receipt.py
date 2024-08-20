@@ -7,6 +7,9 @@ import re
 
 from odoo import fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools.safe_eval import safe_eval
+
+from .account_journal import ini_format_to_dict
 
 RETURN = "\r\n"
 
@@ -15,9 +18,22 @@ class SubrogationReceipt(models.Model):
     _inherit = "subrogation.receipt"
 
     def _prepare_factor_file_eurof(self):
+        "Called from generic module"
         self.ensure_one()
+        settings = safe_eval(self.factor_journal_id.factor_settings)
+        missing_keys = []
+        for key in ini_format_to_dict(
+            self.env["res.company"]._populate_eurof_settings()
+        ):
+            if not settings.get(key):
+                missing_keys.append(key)
+        if missing_keys:
+            raise ValidationError(
+                f"Le journal doit comporter les clés suivantes {missing_keys} "
+                "avec des valeurs correctes"
+            )
         name = "FAA{}_{}_{}_{}.txt".format(
-            self.factor_journal_id.factor_code,
+            settings["client"],
             self._sanitize_filepath(f"{fields.Date.today()}"),
             self.id,
             self._sanitize_filepath(self.company_id.name),
@@ -26,15 +42,15 @@ class SubrogationReceipt(models.Model):
             "name": name,
             "res_id": self.id,
             "res_model": self._name,
-            "datas": self._prepare_factor_file_data_eurof(),
+            "datas": self._prepare_factor_file_data_eurof(settings),
         }
 
-    def _prepare_factor_file_data_eurof(self):
+    def _prepare_factor_file_data_eurof(self, settings):
         self.ensure_one()
         if not self.statement_date:
             # pylint: disable=C8107
             raise ValidationError("Vous devez spécifier la date du dernier relevé")
-        data, max_row, balance = self._get_eurof_body()
+        data, max_row, balance = self._get_eurof_body(settings)
         if data:
             # raw_data = (f"{main}{RETURN}").replace("False", "    ")
             # data = clean_string(raw_data)
@@ -60,7 +76,7 @@ class SubrogationReceipt(models.Model):
             return base64.b64encode(data)
         return False
 
-    def _get_eurof_body(self):
+    def _get_eurof_body(self, settings):
         errors = []
 
         def size(size, data, info=None):
@@ -84,11 +100,9 @@ class SubrogationReceipt(models.Model):
         if res:
             errors.append(res)
         partner_mapping = partners._get_partner_eurof_mapping()
-        main = {
-            "code": size(5, "factor_code", self.factor_journal_id),
-            "code2": size(5, "factor_code2", self.factor_journal_id),
-            "date": eurof_date(fields.Date.today()),
-        }
+        size(5, settings["client"], "client")
+        size(5, settings["emetteurD"], "emetteurD")
+        size(5, settings["emetteurE"], "emetteurE")
         for line in self.line_ids:
             move = line.move_id
             partner = line.move_id.partner_id.commercial_partner_id
@@ -104,18 +118,17 @@ class SubrogationReceipt(models.Model):
             sequence += 1
             p_type = get_type_piece(move)
             total = move.amount_total_in_currency_signed
+            activity = "E"
+            if partner.country_id == self.env.ref("base.fr"):
+                activity = "D"
             info = {
-                "code": main["code"],
-                "code2": main["code2"],
-                "file_date": main["date"],
-                "activity": "D"
-                # TODO check dom tom
-                if partner.country_id == self.env.ref("base.fr")
-                else "E",
-                "afc": "788"
-                # TODO check contrat can be 788
-                if partner.country_id == self.env.ref("base.fr")
-                else "999",
+                "emetteur": settings["emetteurD"]
+                if activity == "D"
+                else settings["emetteurE"],
+                "client": settings["client"],
+                "file_date": eurof_date(fields.Date.today()),
+                "activity": activity,
+                "afc": "711" if activity == "D" else "999",
                 "p_type": p_type,
                 "devise": move.currency_id.name,
             }

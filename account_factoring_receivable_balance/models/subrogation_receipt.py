@@ -108,10 +108,10 @@ class SubrogationReceipt(models.Model):
 
     @api.model
     def _get_domain_for_factor(self):
-        journal = self.factor_journal_id
+        # journal = self.factor_journal_id
         factor_journal = self.factor_journal_id
-        currency = journal.currency_id
-        bank_journal = self._get_bank_journal(self.factor_type, currency=currency)
+        # currency = journal.currency_id
+        # bank_journal = self._get_bank_journal(self.factor_type, currency=currency)
         domain = [
             ("date", "<=", self.target_date),
             ("company_id", "=", self._get_company_id()),
