@@ -33,7 +33,7 @@ class SubrogationReceipt(models.Model):
                 "avec des valeurs correctes"
             )
         name = "FAA{}_{}_{}_{}.txt".format(
-            settings["client"],
+            settings["emetteurD"],
             self._sanitize_filepath(f"{fields.Date.today()}"),
             self.id,
             self._sanitize_filepath(self.company_id.name),
@@ -52,26 +52,6 @@ class SubrogationReceipt(models.Model):
             raise ValidationError("Vous devez spécifier la date du dernier relevé")
         data, max_row, balance = self._get_eurof_body(settings)
         if data:
-            # raw_data = (f"{main}{RETURN}").replace("False", "    ")
-            # data = clean_string(raw_data)
-            # data = raw_data
-            # # check there is no regression in colmuns position
-            # dev_mode = tools.config.options.get("dev_mode")
-            # if dev_mode and dev_mode[0][-3:] == "pdb" or False:
-            #     # make debugging easier saving file on filesystem to check
-            #     debug(raw_data, "_raw")
-            #     debug(data)
-            #     # pylint: disable=C8107
-            #     raise ValidationError("See files /odoo/subrog*.txt")
-            # total_in_erp = sum(self.line_ids.mapped("amount_currency"))
-            # if round(balance, 2) != round(total_in_erp, 2):
-            #     # pylint: disable=C8107
-            #     raise ValidationError(
-            #         "Erreur dans le calul de la balance :"
-            #         f"\n - erp : {total_in_erp}\n - fichier : {balance}"
-            #     )
-            # self.write({"balance": balance})
-            # non ascii chars are replaced
             data = bytes(data, "ascii", "replace").replace(b"?", b" ")
             return base64.b64encode(data)
         return False
@@ -142,9 +122,11 @@ class SubrogationReceipt(models.Model):
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
                 "date_due": eurof_date(move.invoice_date_due) or pad(" ", 8),
                 "paym": "A" if p_type == "F" else "T",  # TODO check si traite
-                "sale": pad(move.invoice_origin if p_type == "A" else " ", 10),
+                "sale": pad(move.invoice_origin, 10, position="left"),
                 "ref_f": pad(" ", 25),  # autre ref facture
-                "ref_a": pad(move.invoice_origin or " ", 14),  # ref facture de l'avoir
+                "ref_a": pad(
+                    move.invoice_origin if p_type == "A" else " ", 14
+                ),  # ref facture de l'avoir
                 "blanc2": pad(" ", 51),  # ref facture de l'avoir
                 "blanc3": pad(" ", 3),  # ref facture de l'avoir
             }
