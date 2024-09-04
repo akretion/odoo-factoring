@@ -4,7 +4,7 @@
 
 import logging
 
-from odoo import fields, models
+from odoo import exceptions, fields, models
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +14,6 @@ class AccountJournal(models.Model):
 
     factor_type = fields.Selection(string="Factor", selection=[])
     factor_code = fields.Char(help="Account Number for factor company")
-    factor_code2 = fields.Char(
-        string="Factor code 2", help="Account Number for factor company"
-    )
     factor_start_date = fields.Date(
         tracking=True,
         help="No account move will be selected before this date",
@@ -52,3 +49,18 @@ class AccountJournal(models.Model):
             "Field Factor type must be unique by Currency, Journal type, and Company",
         )
     ]
+
+    def _get_domain_for_factor(self):
+        self.ensure_one()
+        self = self.with_company(self.company_id.id)
+        domain = []
+        if self.factor_start_date:
+            domain.append(("date", ">=", self.factor_start_date))
+        if self.factor_invoice_journal_ids:
+            domain.append(("journal_id", "in", self.factor_invoice_journal_ids.ids))
+        else:
+            raise exceptions.UserError(
+                "Merci de définir les journaux sur lequels repose le factor "
+                f"sur le journal {self.display_name}"
+            )
+        return domain

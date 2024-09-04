@@ -109,7 +109,6 @@ class SubrogationReceipt(models.Model):
     @api.model
     def _get_domain_for_factor(self):
         # journal = self.factor_journal_id
-        factor_journal = self.factor_journal_id
         # currency = journal.currency_id
         # bank_journal = self._get_bank_journal(self.factor_type, currency=currency)
         domain = [
@@ -122,7 +121,7 @@ class SubrogationReceipt(models.Model):
             (
                 "partner_id.commercial_partner_id.factor_journal_id",
                 "=",
-                factor_journal.id,
+                self.factor_journal_id.id,
             ),
             # "|",
             # ("move_id.partner_bank_id", "=", bank_journal.bank_account_id.id),
@@ -139,16 +138,7 @@ class SubrogationReceipt(models.Model):
         #         ),
         #     )
         # ]
-        if factor_journal.factor_start_date:
-            domain.append(("date", ">=", factor_journal.factor_start_date))
-        if not self.factor_journal_id.factor_invoice_journal_ids:
-            raise UserError(
-                "Merci de définir les journaux sur lequels repose le factor "
-                f"sur le journal {self.factor_journal_id}"
-            )
-        domain.append(
-            ("journal_id", "in", self.factor_journal_id.factor_invoice_journal_ids.ids)
-        )
+        domain.extend(self.factor_journal_id._get_factor_domain())
         return domain
 
     @api.model

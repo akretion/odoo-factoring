@@ -19,7 +19,6 @@
                     <group name="receivable_balance" string="Receivable Balance">
                         <group name="balance_left">
                             <field name="factor_code" />
-                            <field name="factor_code2" />
                             <field name="factoring_receivable_account_id" />
                             <field name="factoring_current_account_id" />
                             <field name="factoring_holdback_account_id" />
