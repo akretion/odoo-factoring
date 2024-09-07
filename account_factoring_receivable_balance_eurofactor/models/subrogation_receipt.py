@@ -20,6 +20,9 @@ class SubrogationReceipt(models.Model):
     def _prepare_factor_file_eurof(self):
         "Called from generic module"
         self.ensure_one()
+        if not self.statement_date:
+            # pylint: disable=C8107
+            raise ValidationError("Vous devez spécifier la date du dernier relevé")
         settings = safe_eval(self.factor_journal_id.factor_settings)
         missing_keys = []
         for key in ini_format_to_dict(
@@ -32,29 +35,33 @@ class SubrogationReceipt(models.Model):
                 f"Le journal doit comporter les clés suivantes {missing_keys} "
                 "avec des valeurs correctes"
             )
-        name = "FAA{}_{}_{}_{}.txt".format(
-            settings["emetteurD"],
-            self._sanitize_filepath(f"{fields.Date.today()}"),
-            self.id,
-            self._sanitize_filepath(self.company_id.name),
-        )
-        return {
-            "name": name,
-            "res_id": self.id,
-            "res_model": self._name,
-            "datas": self._prepare_factor_file_data_eurof(settings),
-        }
+        data = []
+        lines, max_row, balance = self._get_eurof_body(settings)
+        file_date = self._sanitize_filepath(f"{fields.Date.today()}")
+        company_ = self._sanitize_filepath(self.company_id.name)
+        # On peut avoir 2 fichiers
+        my_lines = {"emetteurD": [], "emetteurE": []}
+        for emetteur in my_lines.keys():
+            for line in lines:
+                if settings[emetteur] in line:
+                    my_lines[emetteur].append(line)
+            file_data = bytes(RETURN.join(my_lines[emetteur]), "ascii", "replace")
+            name = f"FAA{settings[emetteur]}_{file_date}_{company_}_{self.id}.txt"
+            data.append(
+                {
+                    "name": name,
+                    "res_id": self.id,
+                    "res_model": self._name,
+                    "datas": base64.b64encode(file_data.replace(b"?", b" ")),
+                }
+            )
+        return data
 
-    def _prepare_factor_file_data_eurof(self, settings):
-        self.ensure_one()
-        if not self.statement_date:
-            # pylint: disable=C8107
-            raise ValidationError("Vous devez spécifier la date du dernier relevé")
-        data, max_row, balance = self._get_eurof_body(settings)
-        if data:
-            data = bytes(data, "ascii", "replace").replace(b"?", b" ")
-            return base64.b64encode(data)
-        return False
+    def _sanitize_filepath(self, string):
+        string = super()._sanitize_filepath(string)
+        if self.factor_type == "eurof":
+            string = string.replace("-", "_")
+        return string
 
     def _get_eurof_body(self, settings):
         errors = []
@@ -142,7 +149,23 @@ class SubrogationReceipt(models.Model):
         if errors:
             self.warn = "\n%s" % "\n".join(errors)
             return False, False, False
-        return (RETURN.join(rows), len(rows), balance)
+        return (rows, len(rows), balance)
+
+    def _compute_instruction(self):
+        """Display mail where send file"""
+        res = super()._compute_instruction()
+        for rec in self:
+            instruction = ""
+            if rec.factor_type == "eurof":
+                settings = safe_eval(self.factor_journal_id.factor_settings)
+                mail_prod = settings.get("mail_prod")
+                if mail_prod:
+                    instruction = (
+                        "Le fichier de quittance est à joindre "
+                        f"à l'adresse ' {mail_prod} '"
+                    )
+            rec.instruction = rec.instruction or instruction
+        return res
 
 
 def get_piece_factor(name, p_type):

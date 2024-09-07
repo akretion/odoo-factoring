@@ -156,7 +156,7 @@ class ResCompany(models.Model):
         return company
 
     def _populate_eurof_settings(self):
-        return "client = 45678\nemetteurD = 54321\nemetteurE = 12345\n"
+        return "client = 45678\nemetteurD = 54321\nemetteurE = 12345\nmail_prod = \n"
 
     def _get_factor_shortname(self):
         """Allow to customze account name

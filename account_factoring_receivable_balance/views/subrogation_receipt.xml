@@ -71,12 +71,19 @@
                             <field name="expense_tax_amount" string="Tax Amount" />
                         </group>
                         <group colspan="4">
+                            <separator string="Comment" colspan="4" />
+                            <field name="comment" nolabel="1" colspan="4" />
                             <separator
-                                string="Comment"
-                                attrs="{'invisible': [('comment', '!=', '')]}"
+                                string="Instructions"
+                                attrs="{'invisible': [('instruction', '=', False)]}"
                                 colspan="4"
                             />
-                            <field name="comment" nolabel="1" colspan="4" />
+                            <field
+                                name="instruction"
+                                nolabel="1"
+                                colspan="4"
+                                attrs="{'invisible': [('instruction', '=', False)]}"
+                            />
                             <separator
                                 string="Warning"
                                 attrs="{'invisible': [('warn', '=', False)]}"

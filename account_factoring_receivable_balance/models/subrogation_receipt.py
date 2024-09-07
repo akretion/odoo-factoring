@@ -69,6 +69,7 @@ class SubrogationReceipt(models.Model):
         required=True,
     )
     comment = fields.Text()
+    instruction = fields.Text(store=False, compute="_compute_instruction")
     line_ids = fields.One2many(
         comodel_name="account.move.line",
         inverse_name="subrogation_id",
@@ -138,7 +139,7 @@ class SubrogationReceipt(models.Model):
         #         ),
         #     )
         # ]
-        domain.extend(self.factor_journal_id._get_factor_domain())
+        domain.extend(self.factor_journal_id._get_domain_for_factor())
         return domain
 
     @api.model
@@ -209,11 +210,19 @@ class SubrogationReceipt(models.Model):
         for rec in self:
             if rec.state == "draft":
                 data = self._prepare_factor_file(rec.factor_type)
-                if data["datas"]:
-                    rec.state = "confirmed"
-                    rec.date = fields.Date.today()
-                    rec.warn = False
-                    self.env["ir.attachment"].create(data)
+                # We support multi/single attachment(s)
+                if isinstance(data, dict):
+                    data_ = [data]
+                else:
+                    data_ = data
+                attach_list = []
+                for datum in data_:
+                    if datum["datas"]:
+                        attach_list.append(datum)
+                self.env["ir.attachment"].create(attach_list)
+                rec.date = fields.Date.today()
+                rec.warn = False
+                rec.state = "confirmed"
 
     def action_post(self):
         for rec in self:
@@ -250,3 +259,6 @@ class SubrogationReceipt(models.Model):
 
     def _get_company_id(self):
         return self.env.company.id
+
+    def _compute_instruction(self):
+        pass
