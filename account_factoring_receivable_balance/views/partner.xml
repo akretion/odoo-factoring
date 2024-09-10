@@ -4,15 +4,16 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="account.view_partner_property_form" />
         <field name="arch" type="xml">
-            <xpath
-                expr="//page[@name='accounting']//group[@name='accounting_entries']"
-                position="after"
-            >
+            <xpath expr="//group[@name='accounting_entries']" position="before">
                 <group
                     name="factoring"
                     string="Factoring"
                     groups="account.group_account_invoice"
-                />
+                    attrs="{'invisible': [('customer_rank', '&lt;=', 0)]}"
+                >
+                    <field name="factor_journal_id" />
+                    <field name="customer_rank" invisible="1" />
+                </group>
             </xpath>
         </field>
     </record>

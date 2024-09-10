@@ -1,29 +1,24 @@
-# © 2022 David BEAL @ Akretion
-# © 2022 Alexis DE LATTRE @ Akretion
+# © 2023 David BEAL @ Akretion
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import fields, models
+from odoo import models
 
 
-class AccountMoveLine(models.Model):
-    _inherit = "account.move.line"
+class AccountMove(models.Model):
+    _inherit = "account.move"
 
-    subrogation_id = fields.Many2one(
-        comodel_name="subrogation.receipt",
-        string="Subrogation Receipt",
-        check_company=True,
-    )
-    bank_id = fields.Many2one(
-        comodel_name="res.bank",
-        related="move_id.partner_bank_id.bank_id",
-        string="Recipient Bank",
-        help="Bank of the partner",
-    )
-    partner_ref = fields.Char(string="Partn.", compute="_compute_partner_ref")
+    def _use_factor(self):
+        ""
+        self.ensure_one()
+        self = self.with_company(self.company_id.id)
+        factor_journal = self.commercial_partner_id.factor_journal_id
+        if factor_journal:
+            # TODO replace by adhoc odoo method : domain to python expression
+            domain = factor_journal._get_domain_for_factor()
+            domain.append(("id", "=", self.id))
+            if self.search(domain):
+                return True
+        return False
 
-    def _compute_partner_ref(self):
-        for rec in self:
-            if rec.partner_id:
-                rec.partner_ref = rec.partner_id.commercial_partner_id.ref
-            else:
-                rec.partner_ref = ""
+
+# env['account.move'].browse(26404)

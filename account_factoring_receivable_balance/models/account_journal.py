@@ -4,23 +4,28 @@
 
 import logging
 
-from odoo import fields, models
+from odoo import exceptions, fields, models
 
 logger = logging.getLogger(__name__)
-
-logger.warning(
-    "\n\n\n     ACHTUNG !!!!!! This module'll have breaking changes in next weeks\n\n"
-)
-logger.warning(
-    "\n\n   Consider to check https://github.com/akretion/odoo-factoring/pull/21\n\n"
-)
-logger.warning("\n\n         Drop a comment to flag you use this module\n\n")
 
 
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
-    factor_type = fields.Selection(string="Factor", selection_add=[("", "")])
+    factor_type = fields.Selection(string="Factor", selection=[])
+    factor_code = fields.Char(help="Account Number for factor company")
+    factor_start_date = fields.Date(
+        tracking=True,
+        help="No account move will be selected before this date",
+    )
+    factor_invoice_journal_ids = fields.Many2many(
+        string="Limit Factoring to Journals",
+        comodel_name="account.journal",
+        relation="account_journal_factor_invoice_rel",
+        column1="factor_journal_id",
+        column2="sale_journal_id",
+        help="Journals to limit Factoring to. Leave blank to allow all journals",
+    )
     factoring_receivable_account_id = fields.Many2one(
         comodel_name="account.account", string="Receivable Account"
     )
@@ -44,3 +49,18 @@ class AccountJournal(models.Model):
             "Field Factor type must be unique by Currency, Journal type, and Company",
         )
     ]
+
+    def _get_domain_for_factor(self):
+        self.ensure_one()
+        self = self.with_company(self.company_id.id)
+        domain = []
+        if self.factor_start_date:
+            domain.append(("date", ">=", self.factor_start_date))
+        if self.factor_invoice_journal_ids:
+            domain.append(("journal_id", "in", self.factor_invoice_journal_ids.ids))
+        else:
+            raise exceptions.UserError(
+                "Merci de définir les journaux sur lequels repose le factor "
+                f"sur le journal {self.display_name}"
+            )
+        return domain

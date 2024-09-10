@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo noupdate="1">
+
+    <record id="eurofactor_id_category" model="res.partner.id_category">
+        <field name="name">Eurofactor</field>
+        <field name="code">EF</field>
+    </record>
+
+</odoo>

@@ -1,8 +1,7 @@
-# © 2022 David BEAL @ Akretion
-# © 2022 Alexis DE LATTRE @ Akretion
+# © 2024 David BEAL @ Akretion
 
 {
-    "name": "Account Factoring Receivable Balance BPCE",
+    "name": "Account Factoring Receivable Balance Eurofactor - Crédit Agricole",
     "version": "16.0.1.0.0",
     "category": "Accounting",
     "license": "AGPL-3",
@@ -10,17 +9,15 @@
     "author": "Akretion",
     "maintainers": [
         "bealdav",
-        "alexis-via",
     ],
     "depends": [
         "account_factoring_receivable_balance",
         "l10n_fr",
+        "partner_identification",
     ],
     "data": [
         "views/partner.xml",
-        "views/company.xml",
-    ],
-    "demo": [
-        "views/company_demo.xml",
+        "views/account_journal.xml",
+        "data/data.xml",
     ],
 }
