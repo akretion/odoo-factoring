@@ -23,4 +23,6 @@
     "demo": [
         "views/company_demo.xml",
     ],
+    # Recent changes in dependencies have not been evaluate for this module
+    "installable": False,
 }
