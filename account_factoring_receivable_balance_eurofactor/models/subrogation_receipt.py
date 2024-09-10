@@ -161,8 +161,10 @@ class SubrogationReceipt(models.Model):
                 mail_prod = settings.get("mail_prod")
                 if mail_prod:
                     instruction = (
-                        "Le fichier de quittance est à joindre "
-                        f"à l'adresse ' {mail_prod} '"
+                        "Les fichiers de quittance sont à joindre "
+                        f"à l'adresse ' {mail_prod} '. Un seul fichier par mail\n"
+                        "Le mail ne doit contenir que le fichier sans signature "
+                        "ni image."
                     )
             rec.instruction = rec.instruction or instruction
         return res

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
-    factor_type = fields.Selection(string="Factor", selection=[])
+    factor_type = fields.Selection(string="Factor", selection=[], tracking=True)
     factor_code = fields.Char(help="Account Number for factor company")
     factor_start_date = fields.Date(
         tracking=True,
@@ -24,22 +24,31 @@ class AccountJournal(models.Model):
         relation="account_journal_factor_invoice_rel",
         column1="factor_journal_id",
         column2="sale_journal_id",
+        tracking=True,
         help="Journals to limit Factoring to. Leave blank to allow all journals",
     )
     factoring_receivable_account_id = fields.Many2one(
-        comodel_name="account.account", string="Receivable Account"
+        comodel_name="account.account", string="Receivable Account", tracking=True
     )
     factoring_current_account_id = fields.Many2one(
-        comodel_name="account.account", string="Current Account"
+        comodel_name="account.account",
+        string="Current Account",
+        tracking=True,
     )
     factoring_holdback_account_id = fields.Many2one(
-        comodel_name="account.account", string="Holdback Account"
+        comodel_name="account.account",
+        string="Holdback Account",
+        tracking=True,
     )
     factoring_pending_recharging_account_id = fields.Many2one(
-        comodel_name="account.account", string="Pending Recharging Account"
+        comodel_name="account.account",
+        string="Pending Recharging Account",
+        tracking=True,
     )
     factoring_expense_account_id = fields.Many2one(
-        comodel_name="account.account", string="Expense Account"
+        comodel_name="account.account",
+        string="Expense Account",
+        tracking=True,
     )
 
     _sql_constraints = [
