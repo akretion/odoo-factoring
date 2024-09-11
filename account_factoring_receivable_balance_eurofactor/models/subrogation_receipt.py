@@ -125,7 +125,7 @@ class SubrogationReceipt(models.Model):
                 "ref_int": pad(partner.ref, 15, position="left"),
                 "blanc1": pad(" ", 23),
                 "ref_move": pad(move.name, 14),
-                "total": pad(round(total), 15, 2),
+                "total": pad(round(total, 2), 15, 0),
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
                 "date_due": eurof_date(move.invoice_date_due) or pad(" ", 8),
                 "paym": "A" if p_type == "F" else "T",  # TODO check si traite
