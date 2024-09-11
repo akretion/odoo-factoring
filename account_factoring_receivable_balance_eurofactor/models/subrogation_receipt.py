@@ -37,6 +37,8 @@ class SubrogationReceipt(models.Model):
             )
         data = []
         lines, max_row, balance = self._get_eurof_body(settings)
+        if not lines:
+            return []
         file_date = self._sanitize_filepath(f"{fields.Date.today()}")
         company_ = self._sanitize_filepath(self.company_id.name)
         # On peut avoir 2 fichiers
@@ -125,14 +127,14 @@ class SubrogationReceipt(models.Model):
                 "ref_int": pad(partner.ref, 15, position="left"),
                 "blanc1": pad(" ", 23),
                 "ref_move": pad(move.name, 14),
-                "total": pad(round(total, 2), 15, 0),
+                "total": pad(str(round(total, 2)).replace(".", ""), 15, 0),
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
                 "date_due": eurof_date(move.invoice_date_due) or pad(" ", 8),
                 "paym": "A" if p_type == "F" else "T",  # TODO check si traite
-                "sale": pad(move.invoice_origin, 10, position="left"),
+                "sale": pad(cut(move.invoice_origin, 10), 10, position="left"),
                 "ref_f": pad(" ", 25),  # autre ref facture
                 "ref_a": pad(
-                    move.invoice_origin if p_type == "A" else " ", 14
+                    cut(move.invoice_origin, 14) if p_type == "A" else " ", 14
                 ),  # ref facture de l'avoir
                 "blanc2": pad(" ", 51),  # ref facture de l'avoir
                 "blanc3": pad(" ", 3),  # ref facture de l'avoir
@@ -200,6 +202,15 @@ def pad(string, pad, end=" ", position="right"):
     else:
         string = string.ljust(pad, end)
     return string
+
+
+def cut(string, size):
+    res = ""
+    if not string:
+        res = " " * size
+    elif len(string) > size:
+        res = string[-size:]
+    return res
 
 
 def check_size(string, size, info=None, field=None):
