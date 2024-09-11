@@ -209,6 +209,7 @@ class SubrogationReceipt(models.Model):
     def action_confirm(self):
         for rec in self:
             if rec.state == "draft":
+                rec.warn = False
                 data = self._prepare_factor_file(rec.factor_type)
                 # We support multi/single attachment(s)
                 if isinstance(data, dict):
@@ -217,12 +218,12 @@ class SubrogationReceipt(models.Model):
                     data_ = data
                 attach_list = []
                 for datum in data_:
-                    if datum["datas"]:
+                    if datum.get("datas"):
                         attach_list.append(datum)
                 self.env["ir.attachment"].create(attach_list)
                 rec.date = fields.Date.today()
-                rec.warn = False
-                rec.state = "confirmed"
+                if data:
+                    rec.state = "confirmed"
 
     def action_post(self):
         for rec in self:
