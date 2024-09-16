@@ -17,13 +17,16 @@ RETURN = "\r\n"
 class SubrogationReceipt(models.Model):
     _inherit = "subrogation.receipt"
 
+    def _factor_settings(self):
+        return safe_eval(self.factor_journal_id.factor_settings)
+
     def _prepare_factor_file_eurof(self):
         "Called from generic module"
         self.ensure_one()
         if not self.statement_date:
             # pylint: disable=C8107
             raise ValidationError("Vous devez spécifier la date du dernier relevé")
-        settings = safe_eval(self.factor_journal_id.factor_settings)
+        settings = self._factor_settings()
         missing_keys = []
         for key in ini_format_to_dict(
             self.env["res.company"]._populate_eurof_settings()
@@ -170,6 +173,26 @@ class SubrogationReceipt(models.Model):
                     )
             rec.instruction = rec.instruction or instruction
         return res
+
+    def _amount_eurof_rpt(self, france=True):
+        lines = self._eurof_lines_rpt(france)
+        return sum(lines.mapped("debit")) - sum(lines.mapped("credit"))
+
+    def _eurof_lines_rpt(self, france=True):
+        if france:
+            return self.line_ids.filtered(
+                lambda s: s.partner_id.commercial_partner_id.country_id
+                == s.env.ref("base.fr")
+            )
+        else:
+            return self.line_ids.filtered(
+                lambda s: not s.partner_id.commercial_partner_id.country_id
+                == s.env.ref("base.fr")
+            )
+
+    def _eurof_labels_rpt(self):
+        line = self.line_ids and self.line_ids[0]
+        return line._eurof_fields_rpt().keys()
 
 
 def get_piece_factor(name, p_type):

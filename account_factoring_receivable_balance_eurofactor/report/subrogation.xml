@@ -1,0 +1,121 @@
+<odoo>
+
+
+<record id="subrogation_report_meta" model="ir.actions.report">
+    <field name="name">Subrogation Report</field>
+    <field name="model">subrogation.receipt</field>
+    <field name="report_type">qweb-pdf</field>
+    <field
+            name="print_report_name"
+        >'Eurofactor - %s - %s' % (object.id, object.company_id.name)</field>
+    <field
+            name="report_name"
+        >account_factoring_receivable_balance_eurofactor.subrogation_report</field>
+    <field
+            name="report_file"
+        >account_factoring_receivable_balance_eurofactor.subrogation_report</field>
+    <field name="binding_model_id" ref="model_subrogation_receipt" />
+    <field name="binding_type">report</field>
+</record>
+
+
+<template id="subrogation_report">
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="o">
+            <t t-translation="off">
+
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 5px;
+}
+</style>
+<h1>Bordereau d'accompagnement Factures ou Avoirs EUROFACTOR</h1>
+<h2>Bordereau N° <span class="" t-out="o.id" /> du <span t-out="o.date" /></h2>
+<div>
+    <div
+                        >Crédit Agricole Leasing et Factoring - 12 place des Etats-Unis - CS 20001 - 92548 Montrouge Cedex</div>
+    <br />
+</div>
+<div>
+    Pour:
+    <br />
+    <div><b><span t-out="o.company_id.name" /></b> - <span
+                                t-out="o.company_id.partner_id.zip"
+                            /> <span t-out="o.company_id.partner_id.city" /> - <span
+                                t-out="o.company_id.partner_id.street"
+                            /></div>
+    <div>Client : <span t-out="o._factor_settings().get('client')" /></div>
+</div>
+<hr />
+<div t-if="o._amount_eurof_rpt()">
+    <h3>Marché domestique</h3>
+    <div>
+        <div>Emetteur: <span t-out="o._factor_settings().get('emetteurD')" /><br
+                                /> Total remise : <span
+                                    t-out="o._amount_eurof_rpt()"
+                                /> € </div>
+    </div>
+    <div t-set="lines" t-value="o._eurof_lines_rpt()" />
+    <div>
+        <table>
+            <thead>
+                <tr>
+                <t t-foreach="o._eurof_labels_rpt()" t-as="lfield">
+                    <td><t t-out="lfield" /></td>
+                </t>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-foreach="o._eurof_lines_rpt()" t-as="line">
+                <tr>
+                    <t t-foreach="o._eurof_labels_rpt()" t-as="lfield">
+                    <td t-out="line._eurof_fields_rpt()[lfield]" />
+                    </t>
+                </tr>
+                </t>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<hr />
+<div t-if="o._amount_eurof_rpt(france=False)">
+    <h3>Marché export</h3>
+    <div>
+        <div>Emetteur: <span t-out="o._factor_settings().get('emetteurE')" /><br
+                                /> Total remise : <span
+                                    t-out="o._amount_eurof_rpt(france=False)"
+                                /> € </div>
+    </div>
+    <div t-set="lines" t-value="o._eurof_lines_rpt(france=False)" />
+    <div>
+        <table>
+            <thead>
+                <tr>
+                <t t-foreach="o._eurof_labels_rpt()" t-as="lfield">
+                    <td><t t-out="lfield" /></td>
+                </t>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-foreach="o._eurof_lines_rpt(france=False)" t-as="line">
+                <tr>
+                    <t t-foreach="o._eurof_labels_rpt()" t-as="lfield">
+                    <td t-out="line._eurof_fields_rpt()[lfield]" />
+                    </t>
+                </tr>
+                </t>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+            </t>
+        </t>
+    </t>
+</template>
+
+</odoo>

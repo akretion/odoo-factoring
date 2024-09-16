@@ -19,5 +19,6 @@
         "views/partner.xml",
         "views/account_journal.xml",
         "data/data.xml",
+        "report/subrogation.xml",
     ],
 }
