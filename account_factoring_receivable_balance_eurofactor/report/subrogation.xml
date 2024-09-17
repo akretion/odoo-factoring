@@ -2,7 +2,7 @@
 
 
 <record id="subrogation_report_meta" model="ir.actions.report">
-    <field name="name">Subrogation Report</field>
+    <field name="name">Quittance subrogative</field>
     <field name="model">subrogation.receipt</field>
     <field name="report_type">qweb-pdf</field>
     <field
@@ -20,11 +20,12 @@
 
 
 <template id="subrogation_report">
-    <t t-call="web.html_container">
-        <t t-foreach="docs" t-as="o">
-            <t t-translation="off">
+    <t t-foreach="docs" t-as="o">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <t t-translation="off">
 
-<style>
+ <style>
 table, th, td {
   border: 1px solid black;
   border-collapse: collapse;
@@ -35,27 +36,18 @@ table, th, td {
 <h2>Bordereau N° <span class="" t-out="o.id" /> du <span t-out="o.date" /></h2>
 <div>
     <div
-                        >Crédit Agricole Leasing et Factoring - 12 place des Etats-Unis - CS 20001 - 92548 Montrouge Cedex</div>
+                            >Crédit Agricole Leasing et Factoring - 12 place des Etats-Unis - CS 20001 - 92548 Montrouge Cedex</div>
     <br />
 </div>
-<div>
-    Pour:
-    <br />
-    <div><b><span t-out="o.company_id.name" /></b> - <span
-                                t-out="o.company_id.partner_id.zip"
-                            /> <span t-out="o.company_id.partner_id.city" /> - <span
-                                t-out="o.company_id.partner_id.street"
-                            /></div>
-    <div>Client : <span t-out="o._factor_settings().get('client')" /></div>
-</div>
+<div>Client : <span t-out="o._factor_settings().get('client')" /></div>
 <hr />
 <div t-if="o._amount_eurof_rpt()">
     <h3>Marché domestique</h3>
     <div>
         <div>Emetteur: <span t-out="o._factor_settings().get('emetteurD')" /><br
-                                /> Total remise : <span
-                                    t-out="o._amount_eurof_rpt()"
-                                /> € </div>
+                                    /> Total remise : <span
+                                        t-out="o._amount_eurof_rpt()"
+                                    /> € </div>
     </div>
     <div t-set="lines" t-value="o._eurof_lines_rpt()" />
     <div>
@@ -86,9 +78,9 @@ table, th, td {
     <h3>Marché export</h3>
     <div>
         <div>Emetteur: <span t-out="o._factor_settings().get('emetteurE')" /><br
-                                /> Total remise : <span
-                                    t-out="o._amount_eurof_rpt(france=False)"
-                                /> € </div>
+                                    /> Total remise : <span
+                                        t-out="o._amount_eurof_rpt(france=False)"
+                                    /> € </div>
     </div>
     <div t-set="lines" t-value="o._eurof_lines_rpt(france=False)" />
     <div>
@@ -113,6 +105,7 @@ table, th, td {
     </div>
 </div>
 
+                </t>
             </t>
         </t>
     </t>

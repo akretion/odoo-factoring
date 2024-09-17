@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+
+    <record id="subrogation_receipt_form" model="ir.ui.view">
+        <field name="model">subrogation.receipt</field>
+        <field
+            name="inherit_id"
+            ref="account_factoring_receivable_balance.subrogation_receipt_form"
+        />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='factor_journal_id']" position="before">
+                <field name="id" string="N°" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="subrogation_receipt_tree" model="ir.ui.view">
+        <field name="model">subrogation.receipt</field>
+        <field
+            name="inherit_id"
+            ref="account_factoring_receivable_balance.subrogation_receipt_tree"
+        />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='factor_journal_id']" position="before">
+                <field name="id" string="N°" />
+            </xpath>
+        </field>
+    </record>
+
+
+</odoo>
