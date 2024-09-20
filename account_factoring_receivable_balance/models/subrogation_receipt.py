@@ -118,6 +118,7 @@ class SubrogationReceipt(models.Model):
             ("parent_state", "=", "posted"),
             self._get_customer_accounts(),
             ("full_reconcile_id", "=", False),
+            ("move_id.skip_factor", "=", False),
             ("subrogation_id", "=", False),
             (
                 "partner_id.commercial_partner_id.factor_journal_id",

@@ -100,7 +100,7 @@
                     <notebook>
                         <page name="lines" string="Lines">
                         <field name="item_ids" colspan="4" nolabel="1">
-                            <tree>
+                            <tree limit="2000">
                                 <field name="id" optional="hide" />
                                 <field name="create_date" optional="hide" />
                                 <field name="date" optional="show" />
