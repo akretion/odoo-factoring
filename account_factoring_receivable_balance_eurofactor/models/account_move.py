@@ -11,7 +11,7 @@ class AccountMove(models.Model):
         "Used in report"
         self.ensure_one()
         self = self.with_company(self.company_id.id)
-        if self._use_factor():
+        if self.use_factor:
             return self.commercial_partner_id.factor_bank_id.display_name
         return ""
 

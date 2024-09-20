@@ -129,10 +129,10 @@ class SubrogationReceipt(models.Model):
             info2 = {
                 "ref_int": pad(partner.ref, 15, position="left"),
                 "blanc1": pad(" ", 23),
-                "ref_move": pad(cut(move.invoice_origin, 14), 14, position="left"),
+                "ref_move": pad(cut(move.name, 14), 14, position="left"),
                 "total": pad(str(round(total, 2)).replace(".", ""), 15, 0),
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
-                "date_due": eurof_date(move.invoice_date_due) or pad(" ", 8),
+                "date_due": eurof_date(move.invoice_date_due),
                 "paym": "A" if p_type == "F" else "T",  # TODO check si traite
                 "sale": pad(cut(move.invoice_origin, 10), 10, position="left"),
                 "ref_f": pad(" ", 25),  # autre ref facture
@@ -143,6 +143,9 @@ class SubrogationReceipt(models.Model):
                 "blanc3": pad(" ", 3),  # ref facture de l'avoir
             }
             info.update(info2)
+            responses = check_required(info, line.name)
+            if responses:
+                errors.extend(responses)
             infos = [val for k, val in info.items()]
             if infos:
                 string = ";".join([x or "" for x in infos]) + ";"
@@ -228,7 +231,7 @@ def pad(string, pad, end=" ", position="right"):
 
 
 def cut(string, size):
-    res = ""
+    res = string
     if not string:
         res = " " * size
     elif len(string) > size:
@@ -253,6 +256,26 @@ def check_string(string, info=None, field=None):
             "La chaine fournie est vide.\n"
         )
     return False
+
+
+def check_required(infos, name):
+    required = [
+        "emetteur",
+        "client",
+        "p_type",
+        "devise",
+        "ref_cli",
+        "ref_int",
+        "ref_move",
+        "total",
+        "date_due",
+    ]
+    messages = []
+    for key in required:
+        datum = infos[key].replace(" ", "")
+        if not datum:
+            messages.append(f"La donnée '{key}' pour '{name}' est manquante.")
+    return messages
 
 
 def inspect_code(stack, string, info=None, field=None):
