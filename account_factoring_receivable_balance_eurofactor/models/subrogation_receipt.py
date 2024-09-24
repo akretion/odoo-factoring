@@ -87,26 +87,26 @@ class SubrogationReceipt(models.Model):
         sequence = 1
         rows = []
         balance = 0
-        partners = self.line_ids.mapped("move_id.partner_shipping_id")
-        res = partners._check_eurof_data()
-        if res:
-            errors.append(res)
-        partner_mapping = partners._get_partner_eurof_mapping()
+        partner_mapping = self.env["res.partner"]._get_partner_eurof_mapping()
         size(5, settings["client"], "client")
         size(5, settings["emetteurD"], "emetteurD")
         size(5, settings["emetteurE"], "emetteurE")
         for line in self.line_ids:
             move = line.move_id
-            partner = line.move_id.partner_shipping_id
-            if not partner:
-                raise ValidationError(
-                    f"Pas de partenaire sur la pièce {line.move_id.name}"
-                )
-            ref_cli = partner_mapping.get(partner)
-            if not ref_cli:
+            partner = line.move_id.commercial_partner_id
+            partner_ident = False
+            if partner_mapping.get(move.partner_shipping_id):
+                partner_ident = move.partner_shipping_id
+            elif partner_mapping.get(move.commercial_partner_id):
+                partner_ident = move.commercial_partner_id
+            else:
                 errors.append(
-                    f"Il manque un identifiant eurofactor pour '{partner.name}'"
+                    f"Il manque un identifiant eurofactor pour la pièce '{move.name}'"
                 )
+            ref_cli = partner_mapping.get(partner_ident)
+            res = partner._check_eurof_data()
+            if res:
+                errors.append(res)
             sequence += 1
             p_type = get_type_piece(move)
             total = abs(move.amount_total_in_currency_signed)
