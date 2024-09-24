@@ -87,7 +87,7 @@ class SubrogationReceipt(models.Model):
         sequence = 1
         rows = []
         balance = 0
-        partners = self.line_ids.mapped("move_id.partner_id.commercial_partner_id")
+        partners = self.line_ids.mapped("move_id.partner_shipping_id")
         res = partners._check_eurof_data()
         if res:
             errors.append(res)
@@ -97,7 +97,7 @@ class SubrogationReceipt(models.Model):
         size(5, settings["emetteurE"], "emetteurE")
         for line in self.line_ids:
             move = line.move_id
-            partner = line.move_id.partner_id.commercial_partner_id
+            partner = line.move_id.partner_shipping_id
             if not partner:
                 raise ValidationError(
                     f"Pas de partenaire sur la pièce {line.move_id.name}"
@@ -123,10 +123,7 @@ class SubrogationReceipt(models.Model):
                 "afc": "711" if activity == "D" else "999",
                 "p_type": p_type,
                 "devise": move.currency_id.name,
-            }
-            if ref_cli:
-                info["ref_cli"] = size(7, ref_cli, partner)
-            info2 = {
+                "ref_cli": size(7, ref_cli or "", partner),
                 "ref_int": pad(partner.ref, 15, position="left"),
                 "blanc1": pad(" ", 23),
                 "ref_move": pad(cut(move.name, 14), 14, position="left"),
@@ -142,7 +139,6 @@ class SubrogationReceipt(models.Model):
                 "blanc2": pad(" ", 51),  # ref facture de l'avoir
                 "blanc3": pad(" ", 3),  # ref facture de l'avoir
             }
-            info.update(info2)
             responses = check_required(info, line.name)
             if responses:
                 errors.extend(responses)
@@ -184,13 +180,11 @@ class SubrogationReceipt(models.Model):
     def _eurof_lines_rpt(self, france=True):
         if france:
             return self.line_ids.filtered(
-                lambda s: s.partner_id.commercial_partner_id.country_id
-                == s.env.ref("base.fr")
+                lambda s: s.partner_shipping_id.country_id == s.env.ref("base.fr")
             )
         else:
             return self.line_ids.filtered(
-                lambda s: not s.partner_id.commercial_partner_id.country_id
-                == s.env.ref("base.fr")
+                lambda s: not s.partner_shipping_id.country_id == s.env.ref("base.fr")
             )
 
     def _eurof_labels_rpt(self):
@@ -272,7 +266,9 @@ def check_required(infos, name):
     ]
     messages = []
     for key in required:
-        datum = infos[key].replace(" ", "")
+        datum = infos[key]
+        if datum:
+            datum = datum.replace(" ", "")
         if not datum:
             messages.append(f"La donnée '{key}' pour '{name}' est manquante.")
     return messages
