@@ -180,11 +180,13 @@ class SubrogationReceipt(models.Model):
     def _eurof_lines_rpt(self, france=True):
         if france:
             return self.line_ids.filtered(
-                lambda s: s.partner_shipping_id.country_id == s.env.ref("base.fr")
+                lambda s: s.move_id.partner_shipping_id.country_id
+                == s.env.ref("base.fr")
             )
         else:
             return self.line_ids.filtered(
-                lambda s: not s.partner_shipping_id.country_id == s.env.ref("base.fr")
+                lambda s: not s.move_id.partner_shipping_id.country_id
+                == s.env.ref("base.fr")
             )
 
     def _eurof_labels_rpt(self):
