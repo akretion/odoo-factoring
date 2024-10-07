@@ -109,7 +109,8 @@ class SubrogationReceipt(models.Model):
                 errors.append(res)
             sequence += 1
             p_type = get_type_piece(move)
-            total = abs(move.amount_total_in_currency_signed)
+            # le montant est mis en cts
+            total = int(round(abs(move.amount_total_in_currency_signed)*100))
             activity = "E"
             if partner.country_id == self.env.ref("base.fr"):
                 activity = "D"
@@ -127,7 +128,7 @@ class SubrogationReceipt(models.Model):
                 "ref_int": pad(partner.ref, 15, position="left"),
                 "blanc1": pad(" ", 23),
                 "ref_move": pad(cut(move.name, 14), 14, position="left"),
-                "total": pad(str(round(total, 2)).replace(".", ""), 15, 0),
+                "total": pad(total, 15, 0),
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
                 "date_due": eurof_date(move.invoice_date_due),
                 "paym": "A" if p_type == "F" else "T",  # TODO check si traite
