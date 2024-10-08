@@ -147,6 +147,11 @@ class SubrogationReceipt(models.Model):
     def _get_customer_accounts(self):
         return ("account_id.account_type", "=", "asset_receivable")
 
+    def _raise_factor_domain(self):
+        "called from server action"
+        domain = self._get_domain_for_factor()
+        raise UserError(f"Here is conditions to select move lines\n\n{domain}")
+
     def _get_factor_lines(self):
         domain = self._get_domain_for_factor()
         lines = self.env["account.move.line"].search(domain)

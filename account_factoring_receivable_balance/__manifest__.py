@@ -22,6 +22,7 @@
         "views/subrogation_receipt.xml",
         "views/partner.xml",
         "views/account_move.xml",
+        "data/action.xml",
     ],
     "demo": [],
 }
