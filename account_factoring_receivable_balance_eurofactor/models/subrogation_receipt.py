@@ -110,7 +110,7 @@ class SubrogationReceipt(models.Model):
             sequence += 1
             p_type = get_type_piece(move)
             # le montant est mis en cts
-            total = int(round(abs(move.amount_total_in_currency_signed)*100))
+            total = int(round(abs(move.amount_total_in_currency_signed) * 100))
             activity = "E"
             if partner.country_id == self.env.ref("base.fr"):
                 activity = "D"
@@ -131,8 +131,10 @@ class SubrogationReceipt(models.Model):
                 "total": pad(total, 15, 0),
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
                 "date_due": eurof_date(move.invoice_date_due),
-                "paym": "A" if p_type == "F" else "T",  # TODO check si traite
-                "sale": pad(cut(move.invoice_origin, 10), 10, position="left"),
+                "paym": "A",  # pas de traite utilisé pour notre client
+                "sale": " " * 10
+                if p_type == "A"
+                else pad(cut(move.invoice_origin, 10), 10, position="left"),
                 "ref_f": pad(" ", 25),  # autre ref facture
                 "ref_a": pad(
                     cut(move.invoice_origin, 14) if p_type == "A" else " ", 14
@@ -166,6 +168,9 @@ class SubrogationReceipt(models.Model):
                 mail_prod = settings.get("mail_prod")
                 if mail_prod:
                     instruction = (
+                        "En cas de fichier déja reçu ré-émis il convient de modifier "
+                        "le N° de facture du fichier qui ne peut être importer 2 fois. "
+                        "Par exemple, VE/00066 peut devenir VE_00066\n"
                         "Les fichiers de quittance sont à joindre "
                         f"à l'adresse ' {mail_prod} '. Un seul fichier par mail\n"
                         "Le mail ne doit contenir que le fichier sans signature "
