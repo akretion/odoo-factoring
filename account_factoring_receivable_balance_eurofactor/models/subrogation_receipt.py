@@ -136,12 +136,9 @@ class SubrogationReceipt(models.Model):
                 if p_type == "A"
                 else pad(cut(move.invoice_origin, 10), 10, position="left"),
                 "ref_f": pad(" ", 25),  # autre ref facture
-                "ref_a": pad(
-                    cut(move.invoice_origin, 14, position="left")
-                    if p_type == "A"
-                    else " ",
-                    14,
-                ),  # ref facture de l'avoir
+                "ref_a": pad(cut(move.invoice_origin, 14), 14, position="left")
+                if p_type == "A"
+                else " " * 14,  # ref facture de l'avoir
                 "blanc2": pad(" ", 51),  # ref facture de l'avoir
                 "blanc3": pad(" ", 3),  # ref facture de l'avoir
             }
