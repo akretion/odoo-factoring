@@ -7,4 +7,12 @@
         />
     </record>
 
+    <record model="ir.rule" id="subrogation_receipt_rule_company">
+        <field name="name">Subrogation Receipt multi-company</field>
+        <field name="model_id" ref="model_subrogation_receipt" />
+        <field name="global" eval="True" />
+        <!-- There is no case where company_id is False because this fields is related on account.journal -->
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
 </odoo>
