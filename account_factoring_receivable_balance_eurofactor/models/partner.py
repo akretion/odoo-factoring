@@ -1,7 +1,7 @@
 # © 2024 David BEAL @ Akretion
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 MODULE = __name__[12 : __name__.index(".", 13)]
 
@@ -14,6 +14,7 @@ class ResPartner(models.Model):
         company_dependent=True,
         groups="account.group_account_manager",
     )
+    eurofactor_ref = fields.Char()
 
     def _get_partner_eurof_mapping(self):
         rec_categ = self.env.ref(f"{MODULE}.eurofactor_id_category")
@@ -42,3 +43,27 @@ class ResPartner(models.Model):
                     "n'ont pas de compte bancaire d'identifiant d'affacturage."
                 )
             return message
+
+
+class ResPartnerId_number(models.Model):
+    _inherit = "res.partner.id_number"
+
+    dummy = fields.Boolean(compute="_compute_dummy", store=True)
+
+    @api.depends("partner_id", "category_id", "name")
+    def _compute_dummy(self):
+        for rec in self:
+            if (
+                rec.partner_id
+                and rec.env.ref(f"{MODULE}.eurofactor_id_category") == rec.category_id
+            ):
+                rec.partner_id.eurofactor_ref = rec.name
+            else:
+                rec.partner_id.eurofactor_ref = False
+
+    def unlink(self):
+        res = super().unlink()
+        for rec in self:
+            if rec.partner_id:
+                rec.partner_id.eurofactor_ref = False
+        return res

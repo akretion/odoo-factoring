@@ -1,7 +1,7 @@
 # © 2024 David BEAL @ Akretion
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import models
+from odoo import fields, models
 
 
 class AccountMove(models.Model):
@@ -18,6 +18,8 @@ class AccountMove(models.Model):
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
+
+    eurofactor_ref = fields.Char(related="partner_id.eurofactor_ref", string="Eurof")
 
     def _eurof_fields_rpt(self):
         partner = self.partner_id.commercial_partner_id

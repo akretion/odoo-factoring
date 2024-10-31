@@ -18,6 +18,7 @@
     "data": [
         "views/partner.xml",
         "views/account_journal.xml",
+        "views/account_move_line.xml",
         "views/subrogation.xml",
         "data/data.xml",
         "report/subrogation.xml",

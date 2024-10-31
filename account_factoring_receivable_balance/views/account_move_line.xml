@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <record id="view_move_line_tree" model="ir.ui.view">
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[@name='account_id']" position="before">
+                <field name="subrogation_id" string="Subrogation" optional="hide" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_move_line_filter" model="ir.ui.view">
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_account_move_line_filter" />
+        <field name="arch" type="xml">
+            <filter name="posted" position="after">
+            <separator />
+                <filter
+                    name="subrogation_id"
+                    string="Subrogation"
+                    domain="[('subrogation_id', '!=', False)]"
+                />
+            </filter>
+            <xpath expr="//group" position="inside">
+                <filter
+                    string="Subrogation"
+                    name="group_by_subrogation_id"
+                    domain="[]"
+                    context="{'group_by': 'subrogation_id'}"
+                />
+            </xpath>
+        </field>
+    </record>
+
+
+<!-- TO FIX
+    <record id="action_account_move_line_subrogation" model="ir.actions.act_window">
+        <field name="context">{'subrogation_id', '!=', False}</field>
+        <field name="name">Ecritures avec Subrogations</field>
+        <field name="res_model">account.move.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="account.view_move_line_tree_grouped_sales_purchases"/>
+    </record>
+
+    <menuitem
+        id="account_moves_subrogation_menu"
+        parent="factoring_menu"
+        sequence="10"
+        action="action_account_move_line_subrogation"
+    />
+ -->
+</odoo>

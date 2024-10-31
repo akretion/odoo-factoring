@@ -35,6 +35,11 @@
                     name="id_numbers"
                     domain="[('id_numbers', '!=', False)]"
                 />
+                   <filter
+                    string="Eurofactor OK"
+                    name="eurofactor_ok"
+                    domain="[('eurofactor_ref', '!=', False), ('factor_bank_id','!=', 0)]"
+                />
                    <separator />
             </xpath>
         </field>
