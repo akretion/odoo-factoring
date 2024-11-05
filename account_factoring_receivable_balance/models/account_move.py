@@ -30,7 +30,7 @@ class AccountMove(models.Model):
         for rec in self:
             use_factor = False
             rec = rec.with_company(rec.company_id.id)
-            if rec.factor_journal_id:
+            if rec.id and rec.factor_journal_id:
                 # TODO replace by adhoc odoo method : domain to python expression
                 domain = rec.factor_journal_id._get_domain_for_factor()
                 domain.extend([("id", "=", rec.id), ("skip_factor", "=", False)])
