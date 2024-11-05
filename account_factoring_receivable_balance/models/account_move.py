@@ -13,6 +13,7 @@ class AccountMove(models.Model):
     use_factor = fields.Boolean(
         compute="_compute_use_factor",
         help="Depending on partner factor settings and skip factor field",
+        store=True,
     )
     factor_journal_id = fields.Many2one(
         comodel_name="account.journal",
