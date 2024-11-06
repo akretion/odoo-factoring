@@ -153,6 +153,14 @@ class ResCompany(models.Model):
                 "factoring_expense_account_id": expense_acc.id,
             }
         )
+        self.env["account.journal"].create(
+            {
+                "name": "OD Eurofactor",
+                "type": "misc",
+                "code": "ODE",
+                "company_id": company.id,
+            }
+        )
         return company
 
     def _populate_eurof_settings(self):

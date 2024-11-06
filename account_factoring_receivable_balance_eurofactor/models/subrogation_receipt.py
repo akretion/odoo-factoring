@@ -5,7 +5,7 @@ import base64
 import inspect
 import re
 
-from odoo import fields, models
+from odoo import Command, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools.safe_eval import safe_eval
 
@@ -19,6 +19,42 @@ class SubrogationReceipt(models.Model):
 
     def _factor_settings(self):
         return safe_eval(self.factor_journal_id.factor_settings)
+
+    def _prepare_journal_entry_vals_list(self):
+        self.ensure_one()
+        fact_journal = self.factor_journal_id
+        vals_list = super()._prepare_journal_entry_vals_list()
+        lines = [
+            Command.create(
+                {
+                    "date": fields.date.today(),
+                    "account_id": fact_journal.factoring_holdback_account_id.id,
+                    "name": x.name,
+                    "debit": x.credit,
+                    "credit": x.debit,
+                }
+            )
+            for x in self.line_ids
+        ]
+        name = f"{self.display_name} N° {self.id}"
+        line = {
+            "date": fields.date.today(),
+            "account_id": fact_journal.factoring_current_account_id.id,
+            "name": f"total {name}",
+            "debit": sum(self.line_ids.mapped("debit")),
+            "credit": sum(self.line_ids.mapped("credit")),
+        }
+        lines.append(Command.create(line))
+        vals = {
+            "journal_id": fact_journal.id,
+            "subrogation_id": self.id,
+            "company_id": self.company_id.id,
+            "date": fields.date.today(),
+            "ref": f"Contrepartie {name}",
+            "line_ids": lines,
+        }
+        vals_list.append(vals)
+        return vals_list
 
     def _prepare_factor_file_eurof(self):
         "Called from generic module"

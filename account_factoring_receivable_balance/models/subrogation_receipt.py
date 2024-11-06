@@ -239,7 +239,20 @@ class SubrogationReceipt(models.Model):
                 and rec.expense_untaxed_amount > 0
                 and rec.expense_tax_amount > 0
             ):
+                vals_list = self._prepare_journal_entry_vals_list()
+                res = rec.env["account.move"].create(vals_list)
                 rec.state = "posted"
+                if len(self) == 1 and res:
+                    action = self.env.ref(
+                        "account.action_move_journal_line"
+                    )._get_action_dict()
+                    action["name"] = _(f"Journal Entries from {rec.display_name}")
+                    action["domain"] = f"[('id', 'in', {res.ids})]"
+                    action["context"] = {
+                        "default_move_type": "entry",
+                        "view_no_maturity": True,
+                    }
+                    return action
             else:
                 raise UserError(
                     _(
@@ -247,6 +260,10 @@ class SubrogationReceipt(models.Model):
                         "'Tax Amount', they should have a value"
                     )
                 )
+
+    def _prepare_journal_entry_vals_list(self):
+        "Implement your own data if needed"
+        return []
 
     def action_goto_moves(self):
         self.ensure_one()

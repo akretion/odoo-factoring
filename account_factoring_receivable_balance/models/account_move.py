@@ -7,6 +7,13 @@ from odoo import fields, models
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    subrogation_id = fields.Many2one(
+        comodel_name="subrogation.receipt",
+        string="Subrogation Receipt",
+        check_company=True,
+        help="Used if you want to create from journal entries from a posted "
+        "Subrogation Receipt",
+    )
     skip_factor = fields.Boolean(
         help="Prevent this document to be taken in account in factor current selection"
     )
