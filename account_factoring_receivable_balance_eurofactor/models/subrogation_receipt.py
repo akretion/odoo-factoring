@@ -28,7 +28,7 @@ class SubrogationReceipt(models.Model):
             Command.create(
                 {
                     "date": fields.date.today(),
-                    "account_id": fact_journal.factoring_holdback_account_id.id,
+                    "account_id": fact_journal.factoring_current_account_id.id,
                     "name": x.name,
                     "debit": x.credit,
                     "credit": x.debit,
@@ -39,7 +39,7 @@ class SubrogationReceipt(models.Model):
         name = f"{self.display_name} N° {self.id}"
         line = {
             "date": fields.date.today(),
-            "account_id": fact_journal.factoring_current_account_id.id,
+            "account_id": fact_journal.factoring_holdback_account_id.id,
             "name": f"total {name}",
             "debit": sum(self.line_ids.mapped("debit")),
             "credit": sum(self.line_ids.mapped("credit")),
