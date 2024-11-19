@@ -235,9 +235,9 @@ class SubrogationReceipt(models.Model):
         for rec in self:
             if (
                 rec.state == "confirmed"
-                and rec.holdback_amount > 0
-                and rec.expense_untaxed_amount > 0
-                and rec.expense_tax_amount > 0
+                # previously holdback_amount, expense_untaxed_amount,
+                # expense_untaxed_amount fields should be > 0
+                # useless
             ):
                 vals_list = self._prepare_journal_entry_vals_list()
                 res = rec.env["account.move"].create(vals_list)

@@ -34,3 +34,14 @@ class AccountMoveLine(models.Model):
             "Origine": self.move_id.invoice_origin,
             "Devise": self.currency_id.name,
         }
+
+    def _eurof_market(self, export=False):
+        if export:
+            return self.filtered(
+                lambda s: s.move_id.commercial_partner_id.country_id
+                == self.env.ref("base.fr")
+            )
+        return self.filtered(
+            lambda s: s.move_id.commercial_partner_id.country_id
+            != self.env.ref("base.fr")
+        )

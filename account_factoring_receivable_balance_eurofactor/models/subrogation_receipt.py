@@ -5,7 +5,7 @@ import base64
 import inspect
 import re
 
-from odoo import Command, fields, models
+from odoo import Command, _, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools.safe_eval import safe_eval
 
@@ -24,36 +24,82 @@ class SubrogationReceipt(models.Model):
         self.ensure_one()
         fact_journal = self.factor_journal_id
         vals_list = super()._prepare_journal_entry_vals_list()
-        lines = [
+        fr_lines, export_lines = []
+        if (
+            not fact_journal.factoring_holdback_acc_exp_id
+            or not fact_journal.factoring_holdback_acc_exp_id
+        ):
+            raise ValidationError(_("Missing export account on factor journal"))
+
+        def get_current_account_lines(move_lines, account_field):
+            return [
+                Command.create(
+                    {
+                        "date": fields.date.today(),
+                        "account_id": fact_journal[account_field].id,
+                        "name": x.name,
+                        "debit": x.credit,
+                        "credit": x.debit,
+                    }
+                )
+                for x in self.line_ids
+            ]
+
+        fr_lines.append(
+            get_current_account_lines(
+                self.line_ids._eurof_market(), "factoring_current_account_id"
+            )
+        )
+        export_lines.append(
+            get_current_account_lines(
+                self.line_ids._eurof_market(export=True), "factoring_current_acc_exp_id"
+            )
+        )
+        name = f"{self.display_name} N° {self.id}"
+        fr_lines.append(
             Command.create(
                 {
                     "date": fields.date.today(),
-                    "account_id": fact_journal.factoring_current_account_id.id,
-                    "name": x.name,
-                    "debit": x.credit,
-                    "credit": x.debit,
+                    "account_id": fact_journal.factoring_holdback_account_id.id,
+                    "name": f"total {name}",
+                    "debit": sum(self.line_ids._eurof_market().mapped("debit")),
+                    "credit": sum(self.line_ids._eurof_market().mapped("credit")),
                 }
             )
-            for x in self.line_ids
-        ]
-        name = f"{self.display_name} N° {self.id}"
-        line = {
-            "date": fields.date.today(),
-            "account_id": fact_journal.factoring_holdback_account_id.id,
-            "name": f"total {name}",
-            "debit": sum(self.line_ids.mapped("debit")),
-            "credit": sum(self.line_ids.mapped("credit")),
-        }
-        lines.append(Command.create(line))
-        vals = {
+        )
+        export_lines.append(
+            Command.create(
+                {
+                    "date": fields.date.today(),
+                    "account_id": fact_journal.factoring_holdback_acc_exp_id.id,
+                    "name": f"total {name}",
+                    "debit": sum(
+                        self.line_ids._eurof_market(export=True).mapped("debit")
+                    ),
+                    "credit": sum(
+                        self.line_ids._eurof_market(export=True).mapped("credit")
+                    ),
+                }
+            )
+        )
+        fr_vals = {
             "journal_id": fact_journal.id,
             "subrogation_id": self.id,
             "company_id": self.company_id.id,
             "date": fields.date.today(),
-            "ref": f"Contrepartie {name}",
-            "line_ids": lines,
+            "ref": f"Contrepartie {name} domestique",
+            "line_ids": fr_lines,
         }
-        vals_list.append(vals)
+        export_vals = {
+            "journal_id": fact_journal.id,
+            "subrogation_id": self.id,
+            "company_id": self.company_id.id,
+            "date": fields.date.today(),
+            "ref": f"Contrepartie {name} export",
+            "line_ids": export_lines,
+        }
+        vals_list.append(fr_vals)
+        vals_list.append(export_vals)
         return vals_list
 
     def _prepare_factor_file_eurof(self):

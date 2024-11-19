@@ -126,12 +126,15 @@ class ResCompany(models.Model):
         acc = {}
         suffix = self._get_factor_shortname()
         for acco in (
-            ["4115", "Factoring Receivable", "income"],
-            ["4671", "Factoring Current", "income"],
-            ["4672", "Factoring Holdback", "income"],
-            ["4673", "Factoring Recharging", "income"],
+            ["4115", "Factoring Receivable", "income", suffix],
+            ["4671", "Factoring Current", "income", suffix],
+            ["4672", "Factoring Holdback", "income", suffix],
+            ["4673", "Factoring Recharging", "income", suffix],
+            ["4671", "Factoring Current exp", "income", "CE"],
+            ["4672", "Factoring Holdback exp", "income", "CE"],
+            ["4673", "Factoring Recharging exp", "income", "CE"],
         ):
-            code = f"{acco[0]}{suffix}"
+            code = f"{acco[0]}{acco[3]}"
             values = {"code": code, "name": acco[1], "account_type": acco[2]}
             values.update(vals)
             acc[code] = self.env["account.account"].create(values)

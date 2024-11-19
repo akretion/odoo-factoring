@@ -27,6 +27,21 @@ class AccountJournal(models.Model):
         help="A saisir dans ce champ des clés / valeurs séparées par des =",
     )
     factor_settings = fields.Char(compute="_compute_factor_settings")
+    factoring_current_acc_exp_id = fields.Many2one(
+        comodel_name="account.account",
+        string="Current Account export",
+        tracking=True,
+    )
+    factoring_holdback_acc_exp_id = fields.Many2one(
+        comodel_name="account.account",
+        string="Holdback Account export",
+        tracking=True,
+    )
+    factoring_pending_recharging_acc_exp_id = fields.Many2one(
+        comodel_name="account.account",
+        string="Pending Recharging Account export",
+        tracking=True,
+    )
 
     @api.depends("factor_data")
     def _compute_factor_settings(self):

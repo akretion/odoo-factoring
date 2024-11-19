@@ -13,6 +13,24 @@
                 <field name="factor_data" />
                 <field name="factor_settings" />
             </xpath>
+            <xpath
+                expr="//field[@name='factoring_current_account_id']"
+                position="after"
+            >
+                <field name="factoring_current_acc_exp_id" />
+            </xpath>
+            <xpath
+                expr="//field[@name='factoring_holdback_account_id']"
+                position="after"
+            >
+                <field name="factoring_holdback_acc_exp_id" />
+            </xpath>
+            <xpath
+                expr="//field[@name='factoring_pending_recharging_account_id']"
+                position="after"
+            >
+                <field name="factoring_pending_recharging_acc_exp_id" />
+            </xpath>
         </field>
     </record>
 
