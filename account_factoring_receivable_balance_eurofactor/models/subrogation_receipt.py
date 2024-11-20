@@ -24,7 +24,7 @@ class SubrogationReceipt(models.Model):
         self.ensure_one()
         fact_journal = self.factor_journal_id
         vals_list = super()._prepare_journal_entry_vals_list()
-        fr_lines, export_lines = []
+        fr_lines, export_lines = [], []
         if (
             not fact_journal.factoring_holdback_acc_exp_id
             or not fact_journal.factoring_holdback_acc_exp_id
@@ -42,15 +42,15 @@ class SubrogationReceipt(models.Model):
                         "credit": x.debit,
                     }
                 )
-                for x in self.line_ids
+                for x in move_lines
             ]
 
-        fr_lines.append(
+        fr_lines.extend(
             get_current_account_lines(
                 self.line_ids._eurof_market(), "factoring_current_account_id"
             )
         )
-        export_lines.append(
+        export_lines.extend(
             get_current_account_lines(
                 self.line_ids._eurof_market(export=True), "factoring_current_acc_exp_id"
             )
@@ -87,7 +87,7 @@ class SubrogationReceipt(models.Model):
             "subrogation_id": self.id,
             "company_id": self.company_id.id,
             "date": fields.date.today(),
-            "ref": f"Contrepartie {name} domestique",
+            "ref": f"{name} domestique",
             "line_ids": fr_lines,
         }
         export_vals = {
@@ -95,7 +95,7 @@ class SubrogationReceipt(models.Model):
             "subrogation_id": self.id,
             "company_id": self.company_id.id,
             "date": fields.date.today(),
-            "ref": f"Contrepartie {name} export",
+            "ref": f"{name} export",
             "line_ids": export_lines,
         }
         vals_list.append(fr_vals)
