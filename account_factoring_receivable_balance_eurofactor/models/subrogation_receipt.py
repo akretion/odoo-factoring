@@ -40,6 +40,7 @@ class SubrogationReceipt(models.Model):
                         "name": x.name,
                         "debit": x.credit,
                         "credit": x.debit,
+                        "subrogation_id": self.id,
                     }
                 )
                 for x in move_lines
@@ -61,9 +62,10 @@ class SubrogationReceipt(models.Model):
                 {
                     "date": fields.date.today(),
                     "account_id": fact_journal.factoring_holdback_account_id.id,
-                    "name": f"total {name}",
+                    "name": f"total {name} france",
                     "debit": sum(self.line_ids._eurof_market().mapped("debit")),
                     "credit": sum(self.line_ids._eurof_market().mapped("credit")),
+                    "subrogation_id": self.id,
                 }
             )
         )
@@ -72,13 +74,14 @@ class SubrogationReceipt(models.Model):
                 {
                     "date": fields.date.today(),
                     "account_id": fact_journal.factoring_holdback_acc_exp_id.id,
-                    "name": f"total {name}",
+                    "name": f"total {name} export",
                     "debit": sum(
                         self.line_ids._eurof_market(export=True).mapped("debit")
                     ),
                     "credit": sum(
                         self.line_ids._eurof_market(export=True).mapped("credit")
                     ),
+                    "subrogation_id": self.id,
                 }
             )
         )
@@ -87,7 +90,7 @@ class SubrogationReceipt(models.Model):
             "subrogation_id": self.id,
             "company_id": self.company_id.id,
             "date": fields.date.today(),
-            "ref": f"{name} domestique",
+            "ref": f"{name} france",
             "line_ids": fr_lines,
         }
         export_vals = {

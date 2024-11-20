@@ -101,8 +101,9 @@ class SubrogationReceipt(models.Model):
     @api.depends("factor_journal_id", "date")
     def _compute_display_name(self):
         for rec in self:
-            rec.display_name = "{} {} {}".format(
-                rec.factor_journal_id._fields["factor_type"].selection[0][1],
+            rec.display_name = "{} {} {} {}".format(
+                rec.factor_journal_id.code,
+                rec.id,
                 rec.currency_id.name or "",
                 rec.date or rec._fields["state"].selection[0][1],
             )

@@ -39,9 +39,9 @@ class AccountMoveLine(models.Model):
         if export:
             return self.filtered(
                 lambda s: s.move_id.commercial_partner_id.country_id
-                == self.env.ref("base.fr")
+                != self.env.ref("base.fr")
             )
         return self.filtered(
             lambda s: s.move_id.commercial_partner_id.country_id
-            != self.env.ref("base.fr")
+            == self.env.ref("base.fr")
         )
