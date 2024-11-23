@@ -552,7 +552,21 @@ msgid ""
 msgstr ""
 
 #. module: account_factoring_receivable_balance
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance.view_move_line_tree
+msgid "Subrogation"
+msgstr ""
+
+#. module: account_factoring_receivable_balance
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance.field_account_move_line__subro_id
+msgid "Subrogation Group"
+msgstr ""
+
+#. module: account_factoring_receivable_balance
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance.field_account_bank_statement_line__subrogation_id
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance.field_account_move__subrogation_id
 #: model:ir.model.fields,field_description:account_factoring_receivable_balance.field_account_move_line__subrogation_id
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance.field_account_payment__subrogation_id
 msgid "Subrogation Receipt"
 msgstr ""
 
@@ -621,6 +635,15 @@ msgstr ""
 #. module: account_factoring_receivable_balance
 #: model:ir.model.fields,help:account_factoring_receivable_balance.field_res_company__factor_config_currency_id
 msgid "Use to configure account and journal"
+msgstr ""
+
+#. module: account_factoring_receivable_balance
+#: model:ir.model.fields,help:account_factoring_receivable_balance.field_account_bank_statement_line__subrogation_id
+#: model:ir.model.fields,help:account_factoring_receivable_balance.field_account_move__subrogation_id
+#: model:ir.model.fields,help:account_factoring_receivable_balance.field_account_payment__subrogation_id
+msgid ""
+"Used if you want to create from journal entries from a posted Subrogation "
+"Receipt"
 msgstr ""
 
 #. module: account_factoring_receivable_balance

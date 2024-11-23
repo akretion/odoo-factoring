@@ -35,12 +35,15 @@ class SubrogationReceipt(models.Model):
             return [
                 Command.create(
                     {
-                        "date": fields.date.today(),
+                        # 4671 account
                         "account_id": fact_journal[account_field].id,
+                        "date": fields.date.today(),
                         "name": x.name,
                         "debit": x.credit,
                         "credit": x.debit,
-                        "subrogation_id": self.id,
+                        "subro_id": self.id,
+                        "factor": x.move_id.name,
+                        "partner_id": x.move_id.partner_id.commercial_partner_id.id,
                     }
                 )
                 for x in move_lines
@@ -57,33 +60,30 @@ class SubrogationReceipt(models.Model):
             )
         )
         name = f"{self.display_name} N° {self.id}"
-        fr_lines.append(
-            Command.create(
+
+        def get_holdback_account_lines(account_field, export=False):
+            where = "france"
+            if export:
+                where = "export"
+            return Command.create(
                 {
+                    # 4672 account
+                    "account_id": fact_journal[account_field]["id"],
                     "date": fields.date.today(),
-                    "account_id": fact_journal.factoring_holdback_account_id.id,
-                    "name": f"total {name} france",
-                    "debit": sum(self.line_ids._eurof_market().mapped("debit")),
-                    "credit": sum(self.line_ids._eurof_market().mapped("credit")),
-                    "subrogation_id": self.id,
-                }
-            )
-        )
-        export_lines.append(
-            Command.create(
-                {
-                    "date": fields.date.today(),
-                    "account_id": fact_journal.factoring_holdback_acc_exp_id.id,
-                    "name": f"total {name} export",
+                    "name": f"total {name} {where}",
                     "debit": sum(
-                        self.line_ids._eurof_market(export=True).mapped("debit")
+                        self.line_ids._eurof_market(export=export).mapped("debit")
                     ),
                     "credit": sum(
-                        self.line_ids._eurof_market(export=True).mapped("credit")
+                        self.line_ids._eurof_market(export=export).mapped("credit")
                     ),
                     "subrogation_id": self.id,
                 }
             )
+
+        fr_lines.append(get_holdback_account_lines("factoring_holdback_account_id"))
+        export_lines.append(
+            get_holdback_account_lines("factoring_holdback_acc_exp_id", export=True)
         )
         fr_vals = {
             "journal_id": fact_journal.id,

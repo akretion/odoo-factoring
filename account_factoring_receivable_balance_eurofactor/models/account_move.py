@@ -20,6 +20,7 @@ class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
     eurofactor_ref = fields.Char(related="partner_id.eurofactor_ref", string="Eurof")
+    factor = fields.Char(string="Match", help="Utilisé pour faciliter le lettrage")
 
     def _eurof_fields_rpt(self):
         partner = self.partner_id.commercial_partner_id

@@ -13,6 +13,12 @@ class AccountMoveLine(models.Model):
         string="Subrogation Receipt",
         check_company=True,
     )
+    subro_id = fields.Many2one(
+        comodel_name="subrogation.receipt",
+        string="Subrogation Group",
+        help="Duplicate of the technical field 'Subrogation Receipt' to be able "
+        "to group journal items according to Subrogations",
+    )
     bank_id = fields.Many2one(
         comodel_name="res.bank",
         related="move_id.partner_bank_id.bank_id",

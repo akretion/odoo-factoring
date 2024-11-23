@@ -161,7 +161,7 @@ class SubrogationReceipt(models.Model):
     def action_compute_lines(self):
         self.ensure_one()
         self.warn = False
-        self.line_ids.write({"subrogation_id": False})
+        self.line_ids.write({"subrogation_id": False, "subro_id": False})
         lines = self._get_factor_lines()
         lines.write({"subrogation_id": self.id})
         if not lines:
@@ -229,6 +229,8 @@ class SubrogationReceipt(models.Model):
                         attach_list.append(datum)
                 self.env["ir.attachment"].create(attach_list)
                 rec.date = fields.Date.today()
+                # subrogation_id duplicate
+                rec.line_ids.write({"subro_id": rec.id})
                 if data:
                     rec.state = "confirmed"
 
@@ -240,20 +242,26 @@ class SubrogationReceipt(models.Model):
                 # expense_untaxed_amount fields should be > 0
                 # useless
             ):
-                vals_list = self._prepare_journal_entry_vals_list()
-                res = rec.env["account.move"].create(vals_list)
+                vals_list = rec._prepare_journal_entry_vals_list()
+                items = rec.env["account.move"].create(vals_list).action_post()
+                items.action_post()
                 rec.state = "posted"
-                if len(self) == 1 and res:
+                for line in rec.line_ids:
+                    if not line.subro_id:
+                        line.subro_id = rec.id
+                    line.factor = line.move_id.name
+                if len(self) == 1 and items:
                     action = self.env.ref(
                         "account.action_move_journal_line"
                     )._get_action_dict()
                     action["name"] = _(f"Journal Entries from {rec.display_name}")
-                    action["domain"] = f"[('id', 'in', {res.ids})]"
+                    action["domain"] = f"[('id', 'in', {items.ids})]"
                     action["context"] = {
                         "default_move_type": "entry",
                         "view_no_maturity": True,
                     }
                     return action
+                return items
             else:
                 raise UserError(
                     _(

@@ -1,0 +1,240 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* account_factoring_receivable_balance_eurofactor
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.0.1\n"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#. odoo-python
+#: code:addons/account_factoring_receivable_balance_eurofactor/models/company.py:0
+#, python-format
+msgid " Configuration aborted"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.actions.report,print_report_name:account_factoring_receivable_balance_eurofactor.subrogation_report_meta
+msgid "'Eurofactor - %s - %s' % (object.id, object.company_id.name)"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,help:account_factoring_receivable_balance_eurofactor.field_account_journal__factor_data
+msgid "A saisir dans ce champ des clés / valeurs séparées par des ="
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__assigned_attachment_ids
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_move__assigned_attachment_ids
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_move_line__assigned_attachment_ids
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_company__assigned_attachment_ids
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_partner__assigned_attachment_ids
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_partner_id_number__assigned_attachment_ids
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_subrogation_receipt__assigned_attachment_ids
+msgid "Assigned Attachments"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_res_company
+msgid "Companies"
+msgstr "Sociétés"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_res_partner
+msgid "Contact"
+msgstr "Contact"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__factoring_current_acc_exp_id
+msgid "Current Account export"
+msgstr "Compte courant export"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_subrogation_receipt
+msgid "Customer balance data for factoring"
+msgstr "Données de la balance client pour le factor"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_partner_id_number__dummy
+msgid "Dummy"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_move_line__eurofactor_ref
+msgid "Eurof"
+msgstr "Eurof"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields.selection,name:account_factoring_receivable_balance_eurofactor.selection__account_journal__factor_type__eurof
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_move_line_tree
+msgid "Eurofactor"
+msgstr "Eurofactor"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.res_partner_view_search
+msgid "Eurofactor Id"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.res_partner_view_search
+msgid "Eurofactor Journal"
+msgstr "Eurofactor Journal"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.res_partner_view_search
+msgid "Eurofactor OK"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_brand__eurofactor_ref
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_partner__eurofactor_ref
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_users__eurofactor_ref
+msgid "Eurofactor Ref"
+msgstr "Eurofactor Ref"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__factor_type
+msgid "Factor"
+msgstr "Factor"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+msgid "Factor 411 lettré"
+msgstr "Factor 411 lettré"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+msgid "Factor 411 à lettrer"
+msgstr "Factor 411 à lettrer"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+msgid "Factor 4671 lettré"
+msgstr "Factor 4671 lettré"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+msgid "Factor 4671 à lettrer"
+msgstr "Factor 4671 à lettrer"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_brand__factor_bank_id
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_partner__factor_bank_id
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_res_users__factor_bank_id
+msgid "Factor Bank"
+msgstr "Factor banque"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__factor_data
+msgid "Factor Data"
+msgstr "Factor Data"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__factor_settings
+msgid "Factor Settings"
+msgstr "Factor Settings"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.res_partner_view_search
+msgid "Factor bank"
+msgstr "Factor bank"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:res.partner.id_category,name:account_factoring_receivable_balance_eurofactor.eurofactor_id_category
+msgid "FactorCA"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#. odoo-python
+#: code:addons/account_factoring_receivable_balance_eurofactor/models/company.py:0
+#, python-format
+msgid "Go to accounting chart configuration"
+msgstr "Aller à la configuration du plan comptable"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__factoring_holdback_acc_exp_id
+msgid "Holdback Account export"
+msgstr "Compte de retenue export"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_account_journal
+msgid "Journal"
+msgstr "Journal"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_account_move
+msgid "Journal Entry"
+msgstr "Pièce comptable"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_account_move_line
+msgid "Journal Item"
+msgstr "Écriture comptable"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_move_line__factor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+msgid "Match"
+msgstr "Match"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#. odoo-python
+#: code:addons/account_factoring_receivable_balance_eurofactor/models/subrogation_receipt.py:0
+#, python-format
+msgid "Missing export account on factor journal"
+msgstr "Missing export account on factor journal"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#. odoo-python
+#: code:addons/account_factoring_receivable_balance_eurofactor/models/company.py:0
+#, python-format
+msgid "Not yet implemented"
+msgstr ""
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model,name:account_factoring_receivable_balance_eurofactor.model_res_partner_id_number
+msgid "Partner ID Number"
+msgstr "Partner ID Number"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,field_description:account_factoring_receivable_balance_eurofactor.field_account_journal__factoring_pending_recharging_acc_exp_id
+msgid "Pending Recharging Account export"
+msgstr "Compte d'attente de rechargement export"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.actions.report,name:account_factoring_receivable_balance_eurofactor.subrogation_report_meta
+msgid "Quittance subrogative"
+msgstr "Quittance"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance_eurofactor.view_account_move_line_filter
+msgid "Subrogation"
+msgstr "Quittance"
+
+#. module: account_factoring_receivable_balance_eurofactor
+#. odoo-python
+#: code:addons/account_factoring_receivable_balance_eurofactor/models/company.py:0
+#, python-format
+msgid ""
+"The accounting chart installed in this company is not the french one. "
+"Install it first"
+msgstr ""
+"Le plan comptable installé dans cette société n'est pas celui de la "
+"France. Installez le d'abord."
+
+#. module: account_factoring_receivable_balance_eurofactor
+#: model:ir.model.fields,help:account_factoring_receivable_balance_eurofactor.field_account_move_line__factor
+msgid "Utilisé pour faciliter le lettrage"
+msgstr ""

@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//tree/field[@name='partner_id']" position="before">
                 <field name="eurofactor_ref" string="Eurofactor" optional="hide" />
+                <field name="factor" optional="show" />
             </xpath>
         </field>
     </record>
@@ -18,15 +19,43 @@
             ref="account_factoring_receivable_balance.view_account_move_line_filter"
         />
         <field name="arch" type="xml">
-            <filter name="subrogation_id" position="after">
+            <filter name="subro_id" position="after">
                 <filter
                     name="eurofactor_ref"
                     string="Eurofactor"
                     domain="[('eurofactor_ref', '!=', False)]"
                 />
+                <filter
+                    name="factor_4671"
+                    string="Factor 4671 à lettrer"
+                    domain="[('amount_residual', '!=', 0), ('account_id.reconcile', '=', True), ('account_id', 'ilike', '4671%')]"
+                />
+                <filter
+                    name="factor_411"
+                    string="Factor 411 à lettrer"
+                    domain="[('amount_residual', '!=', 0), ('account_id.reconcile', '=', True), ('account_id', 'ilike', '411%')]"
+                />
+                <filter
+                    name="factor_4671_reconciled"
+                    string="Factor 4671 lettré"
+                    domain="[('account_id.reconcile', '=', True), ('full_reconcile_id', '!=', False), ('account_id', 'ilike', '4671%')]"
+                />
+                <filter
+                    name="factor_411_reconciled"
+                    string="Factor 411 lettré"
+                    domain="[('account_id.reconcile', '=', True), ('full_reconcile_id', '!=', False), ('account_id', 'ilike', '411%')]"
+                />
             </filter>
+            <xpath expr="//group" position="inside">
+                <filter
+                    name="factor"
+                    string="Match"
+                    domain="[('factor', '!=', False)]"
+                    context="{'group_by': 'factor'}"
+                />
+                <filter string="Subrogation" name="group_by_subro_id" domain="[]" />
+            </xpath>
         </field>
     </record>
-
 
 </odoo>
