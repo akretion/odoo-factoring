@@ -243,7 +243,7 @@ class SubrogationReceipt(models.Model):
                 # useless
             ):
                 vals_list = rec._prepare_journal_entry_vals_list()
-                items = rec.env["account.move"].create(vals_list).action_post()
+                items = rec.env["account.move"].create(vals_list)
                 items.action_post()
                 rec.state = "posted"
                 for line in rec.line_ids:
