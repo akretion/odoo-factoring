@@ -212,7 +212,7 @@ class SubrogationReceipt(models.Model):
                 "ref_cli": size(7, ref_cli or "", partner),
                 "ref_int": pad(partner.ref, 15, position="left"),
                 "blanc1": pad(" ", 23),
-                "ref_move": pad(cut(move.name, 14), 14, position="left"),
+                "ref_move": get_piece_factor(move.name),
                 "total": pad(total, 15, 0),
                 "date": eurof_date(move.invoice_date if p_type == "F" else move.date),
                 "date_due": eurof_date(move.invoice_date_due),
@@ -285,10 +285,9 @@ class SubrogationReceipt(models.Model):
         return line._eurof_fields_rpt().keys()
 
 
-def get_piece_factor(name, p_type):
-    if not p_type:
-        return "{}{}".format(name[:15], pad(" ", 15))
-    return name[:30]
+def get_piece_factor(name):
+    name = name.replace('/', '')
+    return pad(name, 14, position="left")
 
 
 def get_type_piece(move):
