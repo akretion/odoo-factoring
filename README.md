@@ -17,7 +17,19 @@ Accounts Receivable Factoring for Odoo
 
 [//]: # (addons)
 
-This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
+Available addons
+----------------
+addon | version | maintainers | summary
+--- | --- | --- | ---
+[account_factoring_receivable_balance](account_factoring_receivable_balance/) | 16.0.2.1.0 | [![bealdav](https://github.com/bealdav.png?size=30px)](https://github.com/bealdav) [![alexis-via](https://github.com/alexis-via.png?size=30px)](https://github.com/alexis-via) | Account Factoring Receivable Balance
+[account_factoring_receivable_balance_eurofactor](account_factoring_receivable_balance_eurofactor/) | 16.0.1.0.0 | [![bealdav](https://github.com/bealdav.png?size=30px)](https://github.com/bealdav) | Account Factoring Receivable Balance Eurofactor - Crédit Agricole
+
+
+Unported addons
+---------------
+addon | version | maintainers | summary
+--- | --- | --- | ---
+[account_factoring_receivable_balance_bpce](account_factoring_receivable_balance_bpce/) | 16.0.1.0.0 (unported) | [![bealdav](https://github.com/bealdav.png?size=30px)](https://github.com/bealdav) [![alexis-via](https://github.com/alexis-via.png?size=30px)](https://github.com/alexis-via) | Account Factoring Receivable Balance BPCE
 
 [//]: # (end addons)
 
