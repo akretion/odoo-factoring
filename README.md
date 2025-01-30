@@ -17,7 +17,11 @@ Accounts Receivable Factoring
 
 [//]: # (addons)
 
-This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
+Available addons
+----------------
+addon | version | maintainers | summary
+--- | --- | --- | ---
+[account_factoring](account_factoring/) | 14.0.1.0.0 |  | Factoring
 
 [//]: # (end addons)
 
