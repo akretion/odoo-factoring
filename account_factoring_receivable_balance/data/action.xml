@@ -1,11 +1,18 @@
 <odoo>
 
-    <record id="update_expected_cost" model="ir.actions.server">
+    <record id="subrogation_raise_factor_domain" model="ir.actions.server">
         <field name="name">Display domain</field>
         <field name="model_id" ref="model_subrogation_receipt" />
         <field name="binding_model_id" ref="model_subrogation_receipt" />
         <field name="state">code</field>
         <field name="code">record._raise_factor_domain()</field>
+    </record>
+    <record id="move_raise_factor_domain" model="ir.actions.server">
+        <field name="name">Eligible au factor ?</field>
+        <field name="model_id" ref="model_account_move" />
+        <field name="binding_model_id" ref="model_account_move" />
+        <field name="state">code</field>
+        <field name="code">record._is_factor_eligible()</field>
     </record>
 
 </odoo>
