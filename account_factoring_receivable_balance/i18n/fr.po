@@ -636,6 +636,11 @@ msgid "Use Factor"
 msgstr ""
 
 #. module: account_factoring_receivable_balance
+#: model_terms:ir.ui.view,arch_db:account_factoring_receivable_balance.view_account_invoice_filter
+msgid "Use factor"
+msgstr "Utiliser le factor"
+
+#. module: account_factoring_receivable_balance
 #: model:ir.model.fields,help:account_factoring_receivable_balance.field_res_company__factor_config_currency_id
 msgid "Use to configure account and journal"
 msgstr ""
