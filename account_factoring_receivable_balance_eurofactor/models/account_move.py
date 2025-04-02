@@ -12,7 +12,7 @@ class AccountMove(models.Model):
         self.ensure_one()
         self = self.with_company(self.company_id.id)
         if self.use_factor:
-            return self.commercial_partner_id.factor_bank_id.display_name
+            return f"{self.commercial_partner_id.factor_bank_id.bank_id.display_name} - {self.commercial_partner_id.factor_bank_id.acc_number}"
         return ""
 
 
