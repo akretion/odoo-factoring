@@ -2,7 +2,7 @@
 # © 2022 Alexis DE LATTRE @ Akretion
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class AccountMoveLine(models.Model):
@@ -12,6 +12,7 @@ class AccountMoveLine(models.Model):
         comodel_name="subrogation.receipt",
         string="Subrogation Receipt",
         check_company=True,
+        copy=False,
     )
     subro_id = fields.Many2one(
         comodel_name="subrogation.receipt",
@@ -25,3 +26,23 @@ class AccountMoveLine(models.Model):
         string="Recipient Bank",
         help="Bank of the partner",
     )
+
+    @api.model
+    def _get_domain_for_factor(self, journal=None):
+        domain = [
+            ("parent_state", "=", "posted"),
+            self._get_customer_accounts(),
+            ("full_reconcile_id", "=", False),
+            ("move_id.skip_factor", "=", False),
+            ("subrogation_id", "=", False),
+            (
+                "partner_id.commercial_partner_id.factor_journal_id",
+                "=",
+                journal.id,
+            ),
+        ]
+        return domain
+
+    @api.model
+    def _get_customer_accounts(self):
+        return ("account_id.account_type", "=", "asset_receivable")

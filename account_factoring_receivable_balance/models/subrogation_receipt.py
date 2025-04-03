@@ -110,43 +110,17 @@ class SubrogationReceipt(models.Model):
 
     @api.model
     def _get_domain_for_factor(self):
-        # journal = self.factor_journal_id
-        # currency = journal.currency_id
-        # bank_journal = self._get_bank_journal(self.factor_type, currency=currency)
         domain = [
             ("date", "<=", self.target_date),
             ("company_id", "=", self._get_company_id()),
-            ("parent_state", "=", "posted"),
-            self._get_customer_accounts(),
-            ("full_reconcile_id", "=", False),
-            ("move_id.skip_factor", "=", False),
-            ("subrogation_id", "=", False),
-            (
-                "partner_id.commercial_partner_id.factor_journal_id",
-                "=",
-                self.factor_journal_id.id,
-            ),
-            # "|",
-            # ("move_id.partner_bank_id", "=", bank_journal.bank_account_id.id),
-            # ("move_id.partner_bank_id", "=", False),
         ]
-        # domain += [
-        #     (
-        #         "move_id.currency_id",
-        #         "=",
-        #         (
-        #             journal.currency_id
-        #             and journal.currency_id.id
-        #             or journal.company_id.currency_id.id
-        #         ),
-        #     )
-        # ]
+        domain.extend(
+            self.env["account.move.line"]._get_domain_for_factor(
+                journal=self.factor_journal_id
+            )
+        )
         domain.extend(self.factor_journal_id._get_domain_for_factor())
         return domain
-
-    @api.model
-    def _get_customer_accounts(self):
-        return ("account_id.account_type", "=", "asset_receivable")
 
     def _raise_factor_domain(self):
         "called from server action"

@@ -286,7 +286,7 @@ class SubrogationReceipt(models.Model):
 
 
 def get_piece_factor(name):
-    name = name.replace('/', '')
+    name = name.replace("/", "")
     return pad(name, 14, position="left")
 
 
