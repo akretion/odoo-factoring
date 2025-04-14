@@ -19,9 +19,9 @@ Accounts Receivable Factoring
 
 Available addons
 ----------------
-addon | version | maintainers | summary
---- | --- | --- | ---
-[account_factoring](account_factoring/) | 14.0.1.0.0 |  | Factoring
+addon | version    | maintainers | summary
+--- |------------| --- | ---
+[account_factoring](account_factoring/) | 18.0.1.0.0 |  | Factoring
 
 [//]: # (end addons)
 

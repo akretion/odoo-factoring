@@ -8,9 +8,13 @@ from odoo.tools import float_compare
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
-    def _prepare_move_line_default_vals(self, write_off_line_vals=None):
+    def _prepare_move_line_default_vals(
+        self, write_off_line_vals=None, force_balance=None
+    ):
         self.ensure_one()
-        line_vals = super()._prepare_move_line_default_vals(write_off_line_vals)
+        line_vals = super()._prepare_move_line_default_vals(
+            write_off_line_vals, force_balance
+        )
         if self.journal_id.is_factor:
             if self.payment_type == "inbound":  # credit transfer
                 line_vals = self._simulate_factor_credit_transfer_lines(line_vals)
@@ -28,7 +32,7 @@ class AccountPayment(models.Model):
             account = self.env["account.account"].browse(line["account_id"])
             # checking the account should avoid taking a write off line:
             if (
-                account.internal_type == "other"
+                account.account_type == "asset_current"
                 and account.internal_group == "asset"
                 and line["debit"] > 0.0
             ):
@@ -54,7 +58,7 @@ class AccountPayment(models.Model):
         dg = self.currency_id.rounding
 
         initial_balance_journal = self.with_context(
-            {"compute_factor_partner": self.partner_id}
+            compute_factor_partner=self.partner_id
         ).journal_id
         customer_balance = initial_balance_journal.factor_customer_credit
         initial_holdback = initial_balance_journal.factor_holdback_balance
@@ -92,8 +96,8 @@ class AccountPayment(models.Model):
         if float_compare(remaining_amount, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
                 {
-                    "name": "%s - %s"
-                    % (_("Factor Credit Transfer"), original_liquidity_line["name"]),
+                    "name": f"{_('Factor Credit Transfer')} - "
+                    f"{original_liquidity_line['name']}",
                     "date_maturity": original_liquidity_line["date_maturity"],
                     "amount_currency": remaining_amount,
                     "currency_id": original_liquidity_line["currency_id"],
@@ -115,8 +119,7 @@ class AccountPayment(models.Model):
         if float_compare(factor_fee_amount, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
                 {
-                    "name": "%s - %s"
-                    % (_("Factor Fee"), original_liquidity_line["name"]),
+                    "name": f"{_('Factor Fee')} - {original_liquidity_line['name']}",
                     "date_maturity": original_liquidity_line["date_maturity"],
                     "amount_currency": factor_fee_amount,
                     "currency_id": original_liquidity_line["currency_id"],
@@ -135,8 +138,8 @@ class AccountPayment(models.Model):
             )
             liquidity_lines.append(  # TODO fill tax_tag_ids?
                 {
-                    "name": "%s - %s"
-                    % (_("Factor Fee Tax"), original_liquidity_line["name"]),
+                    "name": f"{_('Factor Fee Tax')} - "
+                    f"{original_liquidity_line['name']}",
                     "date_maturity": original_liquidity_line["date_maturity"],
                     "amount_currency": factor_fee_tax_amount,
                     "currency_id": original_liquidity_line["currency_id"],
@@ -150,12 +153,8 @@ class AccountPayment(models.Model):
         if float_compare(invoice_holdback, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
                 {
-                    "name": "%s%% %s - %s"
-                    % (
-                        self.journal_id.factor_holdback_percent,
-                        _("Holdback"),
-                        original_liquidity_line["name"],
-                    ),
+                    "name": f"{self.journal_id.factor_holdback_percent}% "
+                    f"{_('Holdback')} - {original_liquidity_line['name']}",
                     "date_maturity": original_liquidity_line["date_maturity"],
                     "amount_currency": invoice_holdback,
                     "currency_id": original_liquidity_line["currency_id"],
@@ -169,8 +168,8 @@ class AccountPayment(models.Model):
         if float_compare(limit_holdback, 0.0, precision_rounding=dg) > 0:
             liquidity_lines.append(
                 {
-                    "name": "%s - %s"
-                    % (_("Limit Holdback"), original_liquidity_line["name"]),
+                    "name": f"{_('Limit Holdback')} - "
+                    f"{original_liquidity_line['name']}",
                     "date_maturity": original_liquidity_line["date_maturity"],
                     "amount_currency": limit_holdback,
                     "currency_id": original_liquidity_line["currency_id"],
@@ -182,33 +181,34 @@ class AccountPayment(models.Model):
             )
         return liquidity_lines + new_line_vals
 
-    def _synchronize_from_moves(self, changed_fields):
-        """
-        We skip the super move synchronization and do our own here
-        """
-        if self._context.get("factor_move_synchronization"):
-            for pay in self.with_context(skip_account_move_synchronization=True):
-                if pay.journal_id.is_factor:
-                    pass
-                    # TODO implement? see super method
-        else:
-            # if we did nothing bank statement transfer from factor to bank account would fail
-            # because factor accounts are not receivable nor payable.
-            context_dict = {}
-            factor_accounts = set()
-            for journal in self.env["account.journal"].search(
-                [("is_factor", "=", True)]
-            ):
-                factor_accounts.add(journal.default_account_id)
-                factor_accounts.add(journal.factor_holdback_account_id)
-            for pay in self:
-                for line in pay.line_ids:
-                    if (
-                        line.journal_id.type == "bank"
-                        and line.account_id in factor_accounts
-                    ):
-                        context_dict = {"skip_account_move_synchronization": True}
-                        break
-            return super(
-                AccountPayment, self.with_context(context_dict)
-            )._synchronize_from_moves(changed_fields)
+    # def _synchronize_from_moves(self, changed_fields):
+    #     """
+    #     We skip the super move synchronization and do our own here
+    #     """
+    #     if self._context.get("factor_move_synchronization"):
+    #         for pay in self.with_context(skip_account_move_synchronization=True):
+    #             if pay.journal_id.is_factor:
+    #                 pass
+    #                 # TODO implement? see super method
+    #     else:
+    #         # if we did nothing bank statement transfer from
+    #         # factor to bank account would fail
+    #         # because factor accounts are not receivable nor payable.
+    #         context_dict = {}
+    #         factor_accounts = set()
+    #         for journal in self.env["account.journal"].search(
+    #             [("is_factor", "=", True)]
+    #         ):
+    #             factor_accounts.add(journal.default_account_id)
+    #             factor_accounts.add(journal.factor_holdback_account_id)
+    #         for pay in self:
+    #             for line in pay.line_ids:
+    #                 if (
+    #                     line.journal_id.type == "bank"
+    #                     and line.account_id in factor_accounts
+    #                 ):
+    #                     context_dict = {"skip_account_move_synchronization": True}
+    #                     break
+    #         return super(
+    #             AccountPayment, self.with_context(context_dict)
+    #         )._synchronize_from_moves(changed_fields)

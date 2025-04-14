@@ -12,7 +12,7 @@
                  <button
                     name="button_transfer_to_factor"
                     type="object"
-                    attrs="{'invisible': ['|', ('payment_state_with_factor', '!=', 'to_transfer_to_factor'), ('state', '!=', 'posted')]}"
+                    invisible="payment_state_with_factor != 'to_transfer_to_factor' or state != 'posted'"
                     class="oe_highlight"
                     string="Transfer to Factor"
                     groups="account.group_account_invoice"
@@ -22,18 +22,20 @@
                  <button
                     name="button_factor_paid"
                     type="object"
-                    attrs="{'invisible': ['|', '|', ('payment_state_with_factor', '!=', 'transferred_to_factor'), ('state', '!=', 'posted'), ('move_type', '=', 'out_refund')]}"
+                    invisible="payment_state_with_factor != 'transferred_to_factor' or state != 'posted' or move_type == 'out_refund'"
                     class="oe_highlight"
                     string="Factor Paid"
                     groups="account.group_account_invoice"
                 />
             </button>
-        <field name="payment_mode_id" position="attributes">
-        <attribute
-                    name="attrs"
-                >{'readonly': ['|', ('state', 'not in', ['draft', 'posted']), ('payment_state', '!=', 'not_paid')], 'invisible': [('move_type', 'not in', ('out_invoice','out_refund','in_invoice','in_refund'))]}
-    </attribute>
-        </field>
+            <field name="payment_mode_id" position="attributes">
+                <attribute name="readonly">
+                    state not in ['draft', 'posted'] or payment_state != 'not_paid'
+                </attribute>
+                <attribute name="invisible">
+                    move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']
+                </attribute>
+            </field>
             <field name="payment_state" position="after">
                  <field name="payment_state_with_factor" invisible="1" />
             </field>
@@ -42,17 +44,18 @@
                     id="factoring"
                     string="Factoring"
                     name="factoring"
-                    attrs="{'invisible': [('payment_state_with_factor', 'not in', ('submitted_to_factor', 'transferred_to_factor', 'factor_paid'))]}"
+                    invisible="payment_state_with_factor not in ('submitted_to_factor', 'transferred_to_factor', 'factor_paid')"
                 >
                     <group id="factoring_group">
                         <group>
                                 <field
                                 name="factor_transfer_id"
-                                attrs="{'required': [('payment_state_with_factor', 'in', ('submitted_to_factor', 'transferred_to_factor', 'factor_paid'))]}"
+                                required="payment_state_with_factor in ('submitted_to_factor', 'transferred_to_factor', 'factor_paid')"
                             />
                                 <field
                                 name="factor_payment_id"
-                                attrs="{'invisible': [('payment_state_with_factor', 'not in', ('factor_paid', 'transferred_to_factor'))], 'required': [('payment_state_with_factor', 'in', ('factor_paid'))]}"
+                                invisible="payment_state_with_factor not in ('factor_paid', 'transferred_to_factor')"
+                                required="payment_state_with_factor in ('factor_paid')"
                             />
                             <button
                                 name="button_cancel_factor"
@@ -65,15 +68,15 @@
                 </page>
             </page>
             <xpath expr="//sheet/widget[1]" position="attributes">
-                <attribute
-                    name="attrs"
-                >{'invisible': ['|', ('payment_state_with_factor', '=', 'transferred_to_factor'), '|', ('payment_state', '!=', 'paid'), ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))]}</attribute>
+                <attribute name="invisible">
+                    payment_state_with_factor == 'transferred_to_factor' or payment_state == 'paid' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
+                </attribute>
             </xpath>
             <xpath expr="//sheet/widget[1]" position="after">
                 <widget
                     name="web_ribbon"
                     title="Transferred"
-                    attrs="{'invisible': ['|', ('payment_state_with_factor', '!=', 'transferred_to_factor'), '|', ('payment_state', '!=', 'paid'), ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))]}"
+                    invisible="payment_state_with_factor != 'transferred_to_factor' or payment_state != 'paid' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')"
                 />
             </xpath>
         </field>
@@ -104,17 +107,17 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_invoice_tree" />
         <field name="arch" type="xml">
-            <field name="payment_state" position="attributes">
+            <field name="status_in_payment" position="attributes">
                  <attribute name="invisible">1</attribute>
             </field>
-            <field name="payment_state" position="after">
+            <field name="status_in_payment" position="after">
                  <field
                     name="payment_state_with_factor"
                     widget="badge"
                     decoration-danger="payment_state == 'not_paid'"
                     decoration-warning="payment_state in ('partial', 'in_payment')"
                     decoration-success="payment_state in ('paid', 'reversed')"
-                    attrs="{'invisible': [('payment_state', 'in', ('invoicing_legacy'))]}"
+                    invisible="payment_state in ('invoicing_legacy')"
                 />
             </field>
         </field>
@@ -146,15 +149,16 @@
             name="domain"
         >[('display_type', 'not in', ('line_section', 'line_note'))]</field>
         <field name="view_id" ref="account.view_move_line_tree_grouped_misc" />
-        <field name="view_mode">tree,pivot,graph</field>
+        <field name="view_mode">list,pivot,graph</field>
     </record>
 
-    <menuitem
-        id="menu_action_account_moves_journal_factor"
-        action="action_account_moves_journal_factor"
-        groups="account.group_account_readonly"
-        parent="account.menu_finance_entries_accounting_journals"
-        sequence="10"
-    />
+<!--   Journal entries is available from dashboard -->
+<!--    <menuitem-->
+<!--        id="menu_action_account_moves_journal_factor"-->
+<!--        action="action_account_moves_journal_factor"-->
+<!--        groups="account.group_account_readonly"-->
+<!--        parent="account.menu_finance_entries_accounting_journals"-->
+<!--        sequence="10"-->
+<!--    />-->
 
 </odoo>

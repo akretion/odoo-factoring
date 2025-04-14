@@ -114,10 +114,8 @@ class AccountMove(models.Model):
             wiz = (
                 self.env["account.payment.register"]
                 .with_context(
-                    {
-                        "active_model": "account.move",
-                        "active_ids": [inv.id],
-                    }
+                    active_model="account.move",
+                    active_ids=[inv.id],
                 )
                 .create({})
             )
@@ -138,16 +136,18 @@ class AccountMove(models.Model):
                 lines = self.env["account.move.line"].search(
                     [
                         ("move_id", "in", [move.id, auto_reconcile.id]),
-                        ("account_internal_type", "in", ("receivable", "payable")),
+                        (
+                            "account_type",
+                            "in",
+                            ("asset_receivable", "liability_payable"),
+                        ),
                         ("reconciled", "=", False),
                     ]
                 )
+                # context to avoid errors in account.payment#_synchronize_from_moves
                 lines.with_context(
-                    {
-                        # context to avoid errors in account.payment#_synchronize_from_moves
-                        "skip_account_move_synchronization": True,
-                        "factor_move_synchronization": True,
-                    }
+                    skip_account_move_synchronization=True,
+                    factor_move_synchronization=True,
                 ).reconcile()
         return res
 
@@ -173,7 +173,7 @@ class AccountMove(models.Model):
         # getting the % holdback this way ensure it can easily be reconciled
         invoice_holdback = sum(lines.mapped("debit"))
         initial_balance_journal = self.factor_transfer_id.with_context(
-            {"compute_factor_partner": self.partner_id}
+            compute_factor_partner=self.partner_id
         ).journal_id
 
         customer_balance = (
@@ -203,19 +203,21 @@ class AccountMove(models.Model):
         else:
             holdback_total = invoice_holdback
 
+        default_account_id = self.factor_transfer_id.journal_id.default_account_id
+
         payment_vals_list = [
             (
                 0,
                 0,
                 {
-                    "name": "%s - %s" % (_("Payment"), self.partner_id.name),
+                    "name": f"{_('Payment')} - {self.partner_id.name}",
                     # 'date_maturity': fields.Date.context_today(),
                     "amount_currency": holdback_total,
                     "currency_id": self.currency_id.id,
                     "debit": holdback_total,
                     "credit": 0.0,
                     "partner_id": self.partner_id.id,
-                    "account_id": self.factor_transfer_id.journal_id.default_account_id.id,
+                    "account_id": default_account_id.id,
                 },
             ),
         ]
@@ -229,7 +231,7 @@ class AccountMove(models.Model):
                     0,
                     0,
                     {
-                        "name": "%s - %s" % (_("Payment"), self.partner_id.name),
+                        "name": f"{_('Payment')} - {self.partner_id.name}",
                         # 'date_maturity': fields.Date.context_today(),
                         "amount_currency": limit_holdback_to_free,
                         "currency_id": self.currency_id.id,
@@ -247,9 +249,9 @@ class AccountMove(models.Model):
                     0,
                     0,
                     {
-                        "name": "%s - %s" % (_("Payment"), self.partner_id.name),
+                        "name": f"{_('Payment')} - {self.partner_id.name}",
                         # 'date_maturity': fields.Date.context_today(),
-                        "amount_currency": line.debit,
+                        "amount_currency": -line.debit,
                         "currency_id": self.currency_id.id,
                         "debit": 0.0,
                         "credit": line.debit,
@@ -275,11 +277,11 @@ class AccountMove(models.Model):
 
         # now we reconcile the % holdback release:
         domain = [
-            ("account_internal_type", "=", "other"),
+            ("account_type", "=", "other"),
             ("reconciled", "=", False),
             ("credit", ">", 0),
         ]
-        payment_lines = payment.line_ids.filtered_domain(domain)
+        payment_lines = payment.move_id.line_ids.filtered_domain(domain)
         (payment_lines + lines).filtered_domain(
             [
                 (
@@ -289,18 +291,18 @@ class AccountMove(models.Model):
                 ),
                 ("reconciled", "=", False),
             ]
-        ).with_context({"skip_account_move_synchronization": True}).reconcile()
+        ).with_context(skip_account_move_synchronization=True).reconcile()
 
         # now we try to reconcile limit holdback lines:
         # required to test if limit_holdback is zero later
         if not is_test:
             self.env.cr.commit()  # pylint: disable=invalid-commit
-        self.env["account.journal"].flush(["factor_limit_holdback_balance"])
+        self.env["account.journal"].flush_model(["factor_limit_holdback_balance"])
         balance_journal = self.factor_transfer_id.with_context(
-            {"compute_factor_partner": self.partner_id}
+            compute_factor_partner=self.partner_id
         ).journal_id
         if float_is_zero(
-            balance_journal.factor_limit_holdback_balance, 0.0, precision_rounding=dg
+            balance_journal.factor_limit_holdback_balance, precision_rounding=dg
         ):
             open_limit_holdback_lines = self.env["account.move.line"].search(
                 [
@@ -315,7 +317,7 @@ class AccountMove(models.Model):
                 ]
             )
             open_limit_holdback_lines.with_context(
-                {"skip_account_move_synchronization": True}
+                skip_account_move_synchronization=True
             ).reconcile()
 
         self.payment_state_with_factor = "factor_paid"

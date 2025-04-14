@@ -10,7 +10,7 @@ from babel.dates import format_date
 from odoo import api, fields, models
 from odoo.release import version
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
-from odoo.tools.misc import formatLang, get_lang
+from odoo.tools.misc import get_lang
 
 
 class AccountJournal(models.Model):
@@ -35,8 +35,8 @@ class AccountJournal(models.Model):
         "account.account",
         string="Factor Fee Account",
         domain=(
-            "[('internal_type', '=', 'other'), ('internal_group', '=', 'expense'), "
-            "('deprecated', '=', False), ('company_id', '=', current_company_id)]"
+            "[('account_type', '=', 'other'), ('internal_group', '=', 'expense'), "
+            "('deprecated', '=', False), ('company_ids', 'in', [current_company_id])]"
         ),
     )
     factor_holdback_account_id = fields.Many2one(
@@ -44,8 +44,8 @@ class AccountJournal(models.Model):
         string="Factor Holdback Account",
         help="Proportional holdback",
         domain=(
-            "[('internal_type', '=', 'other'), ('deprecated', '=', False), "
-            "('company_id', '=', current_company_id)]"
+            "[('account_type', '=', 'other'), ('deprecated', '=', False), "
+            "('company_ids', 'in', [current_company_id])]"
         ),
     )
     factor_limit_holdback_account_id = fields.Many2one(
@@ -53,8 +53,8 @@ class AccountJournal(models.Model):
         string="Factor Limit Holdback Account",
         help="Holdback when the customer credit is over the limit",
         domain=(
-            "[('internal_type', '=', 'other'), ('deprecated', '=', False), "
-            "('company_id', '=', current_company_id)]"
+            "[('account_type', '=', 'other'), ('deprecated', '=', False), "
+            "('company_ids', '=', [current_company_id])]"
         ),
     )
     factor_tax_id = fields.Many2one(
@@ -64,24 +64,14 @@ class AccountJournal(models.Model):
     )
 
     # computed fields:
-    factor_debit = fields.Monetary(
-        string="Factor Debit", compute="_compute_factor_debit_credit"
-    )
-    factor_credit = fields.Monetary(
-        string="Factor Credit", compute="_compute_factor_debit_credit"
-    )
-    factor_balance = fields.Monetary(
-        string="Factor Balance", compute="_compute_factor_debit_credit"
-    )
-    factor_holdback_balance = fields.Monetary(
-        string="Factor Holdback Balance", compute="_compute_factor_debit_credit"
-    )
+    factor_debit = fields.Monetary(compute="_compute_factor_debit_credit")
+    factor_credit = fields.Monetary(compute="_compute_factor_debit_credit")
+    factor_balance = fields.Monetary(compute="_compute_factor_debit_credit")
+    factor_holdback_balance = fields.Monetary(compute="_compute_factor_debit_credit")
     factor_limit_holdback_balance = fields.Monetary(
-        string="Factor Limit Holdback Balance", compute="_compute_factor_debit_credit"
+        compute="_compute_factor_debit_credit"
     )
-    factor_customer_credit = fields.Monetary(
-        string="Factor Customer Credit", compute="_compute_factor_debit_credit"
-    )
+    factor_customer_credit = fields.Monetary(compute="_compute_factor_debit_credit")
 
     def _compute_factor_debit_credit(self):
         self.factor_debit = 0
@@ -104,15 +94,13 @@ class AccountJournal(models.Model):
 
         partner = self._context.get("compute_factor_partner")
         if partner:
-            where_extra = """
-                AND line.partner_id = %s AND parent_state = 'posted'
-            """ % (
-                int(partner.id)  # int() is for blocking SQL injection
-            )
+            where_extra = f"""
+                AND line.partner_id = {int(partner.id)} AND parent_state = 'posted'
+            """
             account_ids += (partner.property_account_receivable_id.id,)
         else:
             where_extra = "AND parent_state='posted'"
-
+        self.env["account.move.line"].flush_model()
         self.env.cr.execute(
             """
             SELECT line.account_id,
@@ -123,7 +111,8 @@ class AccountJournal(models.Model):
             JOIN account_move AS move
             ON line.move_id = move.id
             WHERE line.account_id IN %s
-            AND (move.move_type != 'out_invoice' OR payment_state_with_factor != 'factor_paid')
+            AND (move.move_type != 'out_invoice' OR
+                payment_state_with_factor != 'factor_paid')
             AND (move.move_type != 'out_invoice' OR move.payment_mode_id IN %s)
         """
             + where_extra
@@ -159,50 +148,50 @@ class AccountJournal(models.Model):
             else:
                 journal.factor_customer_credit = 0
 
+    # pylint: disable=missing-return
     @api.depends("type")
     def _compute_default_account_type(self):
         super()._compute_default_account_type()
         # FIXME usability: you cannot select the factor account before you save
         for journal in self:
             if journal.is_factor:
-                journal.default_account_type = self.env.ref(
-                    "account.data_account_type_current_liabilities"
-                ).id
+                journal.default_account_type = "asset_cash"
 
     def action_open_factor_to_transfer(self):
         action = self.env["ir.actions.actions"]._for_xml_id(
             "account.action_move_out_invoice_type"
         )
-        action[
-            "domain"
-        ] = "[('payment_state_with_factor', '=', 'to_transfer_to_factor')]"
+        action["domain"] = (
+            "[('payment_state_with_factor', '=', 'to_transfer_to_factor')]"
+        )
         return action
 
     def action_open_factor_to_pay(self):
         action = self.env["ir.actions.actions"]._for_xml_id(
             "account.action_move_out_invoice_type"
         )
-        action[
-            "domain"
-        ] = "[('payment_state_with_factor', '=', 'transferred_to_factor')]"
+        action["domain"] = (
+            "[('payment_state_with_factor', '=', 'transferred_to_factor')]"
+        )
         return action
 
     def action_open_factor_holdback(self):
         action = self.env["ir.actions.actions"]._for_xml_id(
             "account.action_account_moves_all"
         )
-        action[
-            "domain"
-        ] = "[('full_reconcile_id', '=', False), ('account_id', 'in', %s)]" % (
-            (
-                self.factor_holdback_account_id.id,
-                self.factor_limit_holdback_account_id.id,
-            ),
+        account_ids = (
+            self.factor_holdback_account_id.id,
+            self.factor_limit_holdback_account_id.id,
         )
+        action["domain"] = (
+            f"[('full_reconcile_id', '=', False), ('account_id', 'in', {account_ids})]"
+        )
+
         return action
 
     # ================ Dashboards
 
+    # pylint: disable=missing-return
     def _kanban_dashboard_graph(self):
         super()._kanban_dashboard_graph()
         for journal in self:
@@ -231,9 +220,10 @@ class AccountJournal(models.Model):
         locale = get_lang(self.env).code
 
         # starting point of the graph is the last statement
-        last_stmt = self._get_last_bank_statement(
-            domain=[("state", "in", ["posted", "confirm"])]
-        )
+        # last_stmt = self._get_last_bank_statement(
+        #     domain=[("state", "in", ["posted", "confirm"])]
+        # )
+        last_stmt = self.last_statement_id
 
         # then we subtract the total amount of bank statement lines per day to get
         # the previous points
@@ -256,7 +246,8 @@ class AccountJournal(models.Model):
             JOIN account_move move ON line.move_id = move.id
             WHERE move.journal_id = %s
         AND line.account_id IN %s
-        AND (move.move_type != 'out_invoice' OR payment_state_with_factor != 'factor_paid')
+        AND (move.move_type != 'out_invoice'
+            OR payment_state_with_factor != 'factor_paid')
         AND (move.move_type != 'out_invoice' OR move.payment_mode_id IN %s)
             AND move.date > %s
             AND move.date <= %s
@@ -308,49 +299,49 @@ class AccountJournal(models.Model):
             }
         ]
 
-    def get_journal_dashboard_datas(self):
-        res = super().get_journal_dashboard_datas()
-        currency = self.currency_id or self.company_id.currency_id
-        if self.is_factor:
-            to_transfer = self.env["account.move"].search(
-                [("payment_state_with_factor", "=", "to_transfer_to_factor")]
-            )
-            number_to_transfer = len(to_transfer)
-            sum_to_transfer = sum(to_transfer.mapped("amount_total"))
-            waiting_payment = self.env["account.move"].search(
-                [("payment_state_with_factor", "=", "transferred_to_factor")]
-            )
-            number_waiting_payment = len(waiting_payment)
-            sum_waiting_payment = sum(waiting_payment.mapped("amount_total"))
-            total_holdback = (
-                self.factor_holdback_balance + self.factor_limit_holdback_balance
-            )
-        else:
-            number_to_transfer = 0
-            sum_to_transfer = 0
-            number_waiting_payment = 0
-            sum_waiting_payment = 0
-            total_holdback = 0
-        res.update(
-            {
-                "is_factor": self.is_factor,
-                "total_holdback": formatLang(
-                    self.env,
-                    currency.round(total_holdback) + 0.0,
-                    currency_obj=currency,
-                ),
-                "number_to_transfer": number_to_transfer,
-                "sum_to_transfer": formatLang(
-                    self.env,
-                    currency.round(sum_to_transfer) + 0.0,
-                    currency_obj=currency,
-                ),
-                "number_waiting_payment": number_waiting_payment,
-                "sum_waiting_payment": formatLang(
-                    self.env,
-                    currency.round(sum_waiting_payment) + 0.0,
-                    currency_obj=currency,
-                ),
-            }
-        )
-        return res
+    # def _get_journal_dashboard_data_batched(self):
+    #     res = super()._get_journal_dashboard_data_batched()
+    #     currency = self.currency_id or self.company_id.currency_id
+    #     if self.is_factor:
+    #         to_transfer = self.env["account.move"].search(
+    #             [("payment_state_with_factor", "=", "to_transfer_to_factor")]
+    #         )
+    #         number_to_transfer = len(to_transfer)
+    #         sum_to_transfer = sum(to_transfer.mapped("amount_total"))
+    #         waiting_payment = self.env["account.move"].search(
+    #             [("payment_state_with_factor", "=", "transferred_to_factor")]
+    #         )
+    #         number_waiting_payment = len(waiting_payment)
+    #         sum_waiting_payment = sum(waiting_payment.mapped("amount_total"))
+    #         total_holdback = (
+    #             self.factor_holdback_balance + self.factor_limit_holdback_balance
+    #         )
+    #     else:
+    #         number_to_transfer = 0
+    #         sum_to_transfer = 0
+    #         number_waiting_payment = 0
+    #         sum_waiting_payment = 0
+    #         total_holdback = 0
+    #     res.update(
+    #         {
+    #             "is_factor": self.is_factor,
+    #             "total_holdback": formatLang(
+    #                 self.env,
+    #                 currency.round(total_holdback) + 0.0,
+    #                 currency_obj=currency,
+    #             ),
+    #             "number_to_transfer": number_to_transfer,
+    #             "sum_to_transfer": formatLang(
+    #                 self.env,
+    #                 currency.round(sum_to_transfer) + 0.0,
+    #                 currency_obj=currency,
+    #             ),
+    #             "number_waiting_payment": number_waiting_payment,
+    #             "sum_waiting_payment": formatLang(
+    #                 self.env,
+    #                 currency.round(sum_waiting_payment) + 0.0,
+    #                 currency_obj=currency,
+    #             ),
+    #         }
+    #     )
+    #     return res

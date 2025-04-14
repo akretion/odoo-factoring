@@ -4,35 +4,35 @@
     <record id="factor_account" model="account.account">
         <field name="name">FACTOR</field>
         <field name="code">140000</field>
-        <field
-            name="user_type_id"
-            ref="account.data_account_type_current_liabilities"
-        />
-        <field name="internal_type">other</field>
+        <!--        <field-->
+        <!--            name="user_type_id"-->
+        <!--            ref="account.data_account_type_current_liabilities"-->
+        <!--        />-->
+        <field name="account_type">liability_current</field>
         <field name="internal_group">liability</field>
     </record>
 
     <record id="factor_holdback_account" model="account.account">
         <field name="name">FACTOR - holdback</field>
         <field name="code">140010</field>
-        <field
-            name="user_type_id"
-            ref="account.data_account_type_current_liabilities"
-        />
+        <!--        <field-->
+        <!--            name="user_type_id"-->
+        <!--            ref="account.data_account_type_current_liabilities"-->
+        <!--        />-->
         <field name="reconcile" eval="True" />
-        <field name="internal_type">other</field>
+        <field name="account_type">liability_current</field>
         <field name="internal_group">liability</field>
     </record>
 
     <record id="factor_limit_holdback_account" model="account.account">
         <field name="name">FACTOR - limit holdback</field>
         <field name="code">140020</field>
-        <field
-            name="user_type_id"
-            ref="account.data_account_type_current_liabilities"
-        />
+        <!--        <field-->
+        <!--            name="user_type_id"-->
+        <!--            ref="account.data_account_type_current_liabilities"-->
+        <!--        />-->
         <field name="reconcile" eval="True" />
-        <field name="internal_type">other</field>
+        <field name="account_type">liability_current</field>
         <field name="internal_group">liability</field>
     </record>
 
@@ -83,8 +83,8 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.consu_delivery_02'), 'quantity': 1, 'price_unit': 100.0}),
-        ]"
+        (0, 0, {'product_id': ref('product.consu_delivery_02'), 'quantity': 1, 'price_unit': 100.0}),
+    ]"
         />
     </record>
 
@@ -92,38 +92,38 @@
         <value eval="[ref('factor_demo_invoice_1')]" />
     </function>
 
-        <!-- Ensure the lines are consistent with the products (taxes, price, name) -->
-        <!-- check_move_validity=False because the dynamic lines are computed after, it is checked later at the post function -->
-        <function
+    <!-- Ensure the lines are consistent with the products (taxes, price, name) -->
+    <!-- check_move_validity=False because the dynamic lines are computed after, it is checked later at the post function -->
+    <function
         model="account.move.line"
-        name="_onchange_product_id"
+        name="_inverse_product_id"
         context="{'check_move_validity': False}"
     >
-            <value
+        <value
             model="account.move.line"
             eval="obj().search([('move_id', 'in', [
-                ref('factor_demo_invoice_1'),
-            ]), ('parent_state', '=', 'draft')]).ids"
+            ref('factor_demo_invoice_1'),
+        ]), ('parent_state', '=', 'draft')]).ids"
         />
-        </function>
+    </function>
 
-        <!-- Recompute the taxes and receivable lines after the onchange executed above -->
-        <function
-        model="account.move"
-        name="_recompute_dynamic_lines"
-        context="{'check_move_validity': False}"
-    >
-            <value eval="[
-                ref('factor_demo_invoice_1'),
-            ]" />
-            <value name="recompute_all_taxes" eval="True" />
-            <value name="recompute_tax_base_amount" eval="True" />
-        </function>
+    <!-- Recompute the taxes and receivable lines after the onchange executed above -->
+    <!--                <function-->
+    <!--                    model="account.move"-->
+    <!--                    name="_recompute_dynamic_lines"-->
+    <!--                    context="{'check_move_validity': False}"-->
+    <!--                >-->
+    <!--                    <value eval="[-->
+    <!--                        ref('factor_demo_invoice_1'),-->
+    <!--                    ]" />-->
+    <!--                    <value name="recompute_all_taxes" eval="True" />-->
+    <!--                    <value name="recompute_tax_base_amount" eval="True" />-->
+    <!--                </function>-->
 
-        <function model="account.move" name="action_post">
-           <value
+    <function model="account.move" name="action_post">
+        <value
             model="account.move"
             eval="obj().search([('id', 'in', [ref('factor_demo_invoice_1'),]), ('state', '=', 'draft')]).ids"
         />
-        </function>
+    </function>
 </odoo>

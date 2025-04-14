@@ -9,7 +9,9 @@ class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
 
     # NOTE this could go to OCA/bank-payment/account_payment_mode no?
-    @api.depends("company_id", "source_currency_id")
+    # @api.depends("company_id", "source_currency_id")
+    # pylint: disable=missing-return
+    @api.depends("available_journal_ids")
     def _compute_journal_id(self):
         super()._compute_journal_id()
         for wiz in self:
@@ -30,12 +32,10 @@ class AccountPaymentRegister(models.TransientModel):
         if self.journal_id.is_factor:
             payments = super(
                 AccountPaymentRegister,
+                # context to avoid errors in account.payment#_synchronize_from_moves
                 self.with_context(
-                    {
-                        # context to avoid errors in account.payment#_synchronize_from_moves
-                        "skip_account_move_synchronization": True,
-                        "factor_move_synchronization": True,
-                    }
+                    skip_account_move_synchronization=True,
+                    factor_move_synchronization=True,
                 ),
             )._create_payments()
             if (

@@ -8,18 +8,18 @@ from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 @tagged("post_install", "-at_install")
 class TestFactorInvoice(AccountTestInvoicingCommon):
     @classmethod
-    def setUpClass(cls, chart_template_ref=None):
-        super().setUpClass(chart_template_ref=chart_template_ref)
+    def setUpClass(cls):
+        super().setUpClass()
 
         cls.account_account = cls.env["account.account"]
         cls.account_factor = cls.account_account.create(
             dict(
                 code="140000",
                 name="FACTOR",
-                user_type_id=cls.env.ref(
-                    "account.data_account_type_current_liabilities"
-                ).id,
-                internal_type="other",
+                # user_type_id=cls.env.ref(
+                #     "account.data_account_type_current_liabilities"
+                # ).id,
+                account_type="liability_current",
                 internal_group="liability",
                 reconcile=False,
             )
@@ -28,22 +28,22 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
             dict(
                 code="140010",
                 name="FACTOR - holdback",
-                user_type_id=cls.env.ref(
-                    "account.data_account_type_current_liabilities"
-                ).id,
-                internal_type="other",
+                # user_type_id=cls.env.ref(
+                #     "account.data_account_type_current_liabilities"
+                # ).id,
+                account_type="liability_current",
                 internal_group="liability",
                 reconcile=True,
             )
         )
-        cls.account_factor_limit_holdback = cls.account_account.create(
+        cls.acc_factor_limit_holdback = cls.account_account.create(
             dict(
                 code="140020",
                 name="FACTOR - limit holdback",
-                user_type_id=cls.env.ref(
-                    "account.data_account_type_current_liabilities"
-                ).id,
-                internal_type="other",
+                # user_type_id=cls.env.ref(
+                #     "account.data_account_type_current_liabilities"
+                # ).id,
+                account_type="liability_current",
                 internal_group="liability",
                 reconcile=True,
             )
@@ -56,7 +56,7 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
                 "is_factor": True,
                 "default_account_id": cls.account_factor.id,
                 "factor_holdback_account_id": cls.account_factor_holdback.id,
-                "factor_limit_holdback_account_id": cls.account_factor_limit_holdback.id,
+                "factor_limit_holdback_account_id": cls.acc_factor_limit_holdback.id,
                 "factor_holdback_percent": 10,
             }
         )
@@ -89,7 +89,7 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
         """
         normal_inv = self.factor_inv.copy({"payment_mode_id": False})
         receivable_lines = normal_inv.line_ids.filtered(
-            lambda line: line.account_id.user_type_id.type == "receivable"
+            lambda line: line.account_id.account_type == "asset_receivable"
         )
         self.assertEqual(
             receivable_lines[0].account_id.id,
@@ -112,7 +112,7 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
     def test_draft_customer_invoice(self):
         self.assertEqual(self.factor_inv.amount_total, 1000.0 * 1.15)
         receivable_lines = self.factor_inv.line_ids.filtered(
-            lambda line: line.account_id.user_type_id.type == "receivable"
+            lambda line: line.account_id.account_type == "asset_receivable"
         )
         self.assertEqual(
             receivable_lines[0].account_id.id,
@@ -178,7 +178,7 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
         )
         self.assertTrue(abs(factor_holdback_line.debit - 1000 * 1.15 * 0.1) < 0.01)
         factor_limit_holdback_line = transfer.line_ids.filtered(
-            lambda line: line.account_id == self.account_factor_limit_holdback
+            lambda line: line.account_id == self.acc_factor_limit_holdback
         )
         self.assertEqual(factor_limit_holdback_line.debit, 235)
         self.assertEqual(self.factor_inv.partner_id.factor_credit, 1000 * 1.15)
@@ -194,4 +194,42 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
         self.factor_inv._post()
         self.factor_inv.button_transfer_to_factor()
         self.journal_factor.get_factor_line_graph_data()
-        self.journal_factor.get_journal_dashboard_datas()
+        self.journal_factor._get_journal_dashboard_data_batched()
+
+    def test_default_account_type(self):
+        self.assertEqual(self.journal_factor.default_account_type, "asset_cash")
+
+    def test_action_factor(self):
+        factor_action = self.journal_factor.action_open_factor_to_transfer()
+        self.assertEqual(
+            factor_action["domain"],
+            "[('payment_state_with_factor', '=', 'to_transfer_to_factor')]",
+        )
+        factor_action = self.journal_factor.action_open_factor_to_pay()
+        self.assertEqual(
+            factor_action["domain"],
+            "[('payment_state_with_factor', '=', 'transferred_to_factor')]",
+        )
+        factor_action = self.journal_factor.action_open_factor_holdback()
+        factor_accounts_ids = (
+            self.journal_factor.factor_holdback_account_id.id,
+            self.journal_factor.factor_limit_holdback_account_id.id,
+        )
+        domain = (
+            f"[('full_reconcile_id', '=', False), ('account_id', 'in', "
+            f"{factor_accounts_ids})]"
+        )
+        self.assertEqual(factor_action["domain"], domain)
+
+    def test_open_customer_holdback(self):
+        customer_action = self.factor_inv.partner_id.open_customer_holdback()
+        factor_accounts = (
+            self.journal_factor.factor_holdback_account_id
+            | self.journal_factor.factor_limit_holdback_account_id
+        )
+        domain = (
+            f"[('full_reconcile_id', '=', False), "
+            f"('account_id', 'in', {factor_accounts.ids}), "
+            f"('partner_id', '=', {self.factor_inv.partner_id.id})]"
+        )
+        self.assertEqual(customer_action["domain"], domain)
