@@ -69,7 +69,7 @@
             </page>
             <xpath expr="//sheet/widget[1]" position="attributes">
                 <attribute name="invisible">
-                    payment_state_with_factor == 'transferred_to_factor' or payment_state == 'paid' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
+                    payment_state_with_factor == 'transferred_to_factor' or payment_state != 'paid' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
                 </attribute>
             </xpath>
             <xpath expr="//sheet/widget[1]" position="after">
