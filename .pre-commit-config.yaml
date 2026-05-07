@@ -47,8 +47,6 @@ repos:
     hooks:
       # update the NOT INSTALLABLE ADDONS section above
       - id: oca-update-pre-commit-excluded-addons
-      - id: oca-fix-manifest-website
-        args: ["https://github.com/OCA/purchase-workflow"]
       - id: oca-gen-addon-readme
         args:
           - --addons-dir=.
