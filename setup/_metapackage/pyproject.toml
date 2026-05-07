@@ -1,0 +1,11 @@
+[project]
+name = "odoo-addons-akretion-odoo-factoring"
+version = "18.0.20260507.0"
+dependencies = [
+    "odoo-addon-account_factoring==18.0.*",
+]
+classifiers=[
+    "Programming Language :: Python",
+    "Framework :: Odoo",
+    "Framework :: Odoo :: 18.0",
+]
