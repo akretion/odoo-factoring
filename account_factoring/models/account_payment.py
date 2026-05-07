@@ -1,72 +1,64 @@
 # Copyright (C) 2021 - TODAY Raphaël Valyi - Akretion
-# License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import _, models
+from odoo import models
 from odoo.tools import float_compare
 
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
-    def _prepare_move_line_default_vals(
-        self, write_off_line_vals=None, force_balance=None
-    ):
+    def _prepare_move_withholding_lines(self, default_values):
+        """Inject factoring fees and holdbacks as withholding lines.
+        Odoo 18 will automatically deduct these from the liquidity line balance.
+        """
+        res = super()._prepare_move_withholding_lines(default_values)
+
+        if not self.journal_id.is_factor or self.payment_type != "inbound":
+            return res
+
         self.ensure_one()
-        line_vals = super()._prepare_move_line_default_vals(
-            write_off_line_vals, force_balance
-        )
-        if self.journal_id.is_factor:
-            if self.payment_type == "inbound":  # credit transfer
-                line_vals = self._simulate_factor_credit_transfer_lines(line_vals)
-            elif self.payment_type == "outbound":  # refund transfer
-                for line in line_vals:
-                    if line["credit"] > 0.0:
-                        line["account_id"] = self.journal_id.default_account_id.id
-        return line_vals
+        dg = self.currency_id.rounding
+        company_currency = self.company_id.currency_id
 
-    def _simulate_factor_credit_transfer_lines(self, line_vals):
-        self.ensure_one()
-        original_liquidity_line = False
-        new_line_vals = []
-        for line in line_vals:
-            account = self.env["account.account"].browse(line["account_id"])
-            # checking the account should avoid taking a write off line:
-            if (
-                account.account_type == "asset_current"
-                and account.internal_group == "asset"
-                and line["debit"] > 0.0
-            ):
-                original_liquidity_line = line
-            else:
-                new_line_vals.append(line)
-
-        if not original_liquidity_line:
-            return line_vals
-
-        amount = original_liquidity_line["debit"]
+        # Logic for amounts calculation
+        amount = self.amount
         factor_fee_amount = self.currency_id.round(
             amount * self.journal_id.factor_fee / 100.0
         )
-        factor_fee_tax_amount = self.currency_id.round(
-            factor_fee_amount * self.journal_id.factor_tax_id.amount / 100.0
-        )
 
+        # Calculate Tax on Fee
+        factor_fee_tax_amount = 0.0
+        fee_tax_account_id = False
+        if self.journal_id.factor_tax_id:
+            factor_fee_tax_amount = self.currency_id.round(
+                factor_fee_amount * self.journal_id.factor_tax_id.amount / 100.0
+            )
+            tax_repartition = (
+                self.journal_id.factor_tax_id.invoice_repartition_line_ids.filtered(
+                    lambda line: line.repartition_type == "tax"
+                )
+            )
+            if tax_repartition:
+                fee_tax_account_id = tax_repartition[0].account_id.id
+
+        # Standard Holdback %
         invoice_holdback = self.currency_id.round(
             amount * self.journal_id.factor_holdback_percent / 100.0
         )
 
-        dg = self.currency_id.rounding
-
+        # Limit Holdback Logic
         initial_balance_journal = self.with_context(
             compute_factor_partner=self.partner_id
         ).journal_id
+
         customer_balance = initial_balance_journal.factor_customer_credit
         initial_holdback = initial_balance_journal.factor_holdback_balance
         initial_limit_holdback = initial_balance_journal.factor_limit_holdback_balance
 
         limit_holdback = self.currency_id.round(
             customer_balance
-            - self.partner_id.factor_credit_limit
+            - (self.partner_id.factor_credit_limit or 0.0)
             - initial_holdback
             - invoice_holdback
             - initial_limit_holdback
@@ -78,137 +70,53 @@ class AccountPayment(models.Model):
             float_compare(limit_holdback, 0.0, precision_rounding=dg) < 0
             or not self.partner_id.factor_credit_limit
         ):
-            limit_holdback = 0
+            limit_holdback = 0.0
 
-        # TODO limit_holdback can also be 0 under other conditions
-        # such as customer_balance < 40% of total factor_balance...
+        # Prepare withholding dictionaries
+        withholding_configs = [
+            (
+                factor_fee_amount,
+                self.journal_id.factor_fee_account_id.id,
+                self.env._("Factor Fee"),
+            ),
+            (factor_fee_tax_amount, fee_tax_account_id, self.env._("Factor Fee Tax")),
+            (
+                invoice_holdback,
+                self.journal_id.factor_holdback_account_id.id,
+                self.env._("Holdback"),
+            ),
+            (
+                limit_holdback,
+                self.journal_id.factor_limit_holdback_account_id.id,
+                self.env._("Limit Holdback"),
+            ),
+        ]
 
-        remaining_amount = self.currency_id.round(
-            original_liquidity_line["debit"]
-            - factor_fee_amount
-            - factor_fee_tax_amount
-            - invoice_holdback
-            - limit_holdback
-        )
+        for amt, acc_id, label in withholding_configs:
+            if float_compare(amt, 0.0, precision_rounding=dg) > 0 and acc_id:
+                res.append(
+                    {
+                        "name": f"{label} - {self.name}",
+                        "account_id": acc_id,
+                        "amount_currency": amt,
+                        "balance": self.currency_id._convert(
+                            amt, company_currency, self.company_id, self.date
+                        ),
+                        "currency_id": self.currency_id.id,
+                        "partner_id": self.partner_id.id,
+                    }
+                )
 
-        liquidity_lines = []
+        return res
 
-        if float_compare(remaining_amount, 0.0, precision_rounding=dg) > 0:
-            liquidity_lines.append(
-                {
-                    "name": f"{_('Factor Credit Transfer')} - "
-                    f"{original_liquidity_line['name']}",
-                    "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": remaining_amount,
-                    "currency_id": original_liquidity_line["currency_id"],
-                    "debit": remaining_amount,
-                    "credit": 0.0,
-                    "partner_id": original_liquidity_line["partner_id"],
-                    "account_id": self.journal_id.default_account_id.id,
-                }
-            )
-        elif (
-            float_compare(limit_holdback + remaining_amount, 0, precision_rounding=dg)
-            > 0
-        ):
-            # the factor customer balance is such that all money is hold back.
-            # (remaining_amount is negative)
-            # now we should make sure that we don't holdback more than the max possible:
-            limit_holdback += remaining_amount
+    def _prepare_move_liquidity_lines(self, default_values):
+        """Ensure the correct liquidity account is used for factor journals."""
+        res = super()._prepare_move_liquidity_lines(default_values)
 
-        if float_compare(factor_fee_amount, 0.0, precision_rounding=dg) > 0:
-            liquidity_lines.append(
-                {
-                    "name": f"{_('Factor Fee')} - {original_liquidity_line['name']}",
-                    "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": factor_fee_amount,
-                    "currency_id": original_liquidity_line["currency_id"],
-                    "debit": factor_fee_amount,
-                    "credit": 0.0,
-                    "partner_id": original_liquidity_line["partner_id"],
-                    "account_id": self.journal_id.factor_fee_account_id.id,
-                }
-            )
+        if self.journal_id.is_factor:
+            # For factoring, we often force the use of the default account
+            # instead of outstanding accounts for specific transfer types
+            for line in res:
+                line["account_id"] = self.journal_id.default_account_id.id
 
-        if float_compare(factor_fee_tax_amount, 0.0, precision_rounding=dg) > 0:
-            fee_tax_account = (
-                self.journal_id.factor_tax_id.invoice_repartition_line_ids.filtered(
-                    lambda line: line.repartition_type == "tax"
-                )[0].account_id
-            )
-            liquidity_lines.append(  # TODO fill tax_tag_ids?
-                {
-                    "name": f"{_('Factor Fee Tax')} - "
-                    f"{original_liquidity_line['name']}",
-                    "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": factor_fee_tax_amount,
-                    "currency_id": original_liquidity_line["currency_id"],
-                    "debit": factor_fee_tax_amount,
-                    "credit": 0.0,
-                    "partner_id": original_liquidity_line["partner_id"],
-                    "account_id": fee_tax_account.id,
-                }
-            )
-
-        if float_compare(invoice_holdback, 0.0, precision_rounding=dg) > 0:
-            liquidity_lines.append(
-                {
-                    "name": f"{self.journal_id.factor_holdback_percent}% "
-                    f"{_('Holdback')} - {original_liquidity_line['name']}",
-                    "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": invoice_holdback,
-                    "currency_id": original_liquidity_line["currency_id"],
-                    "debit": invoice_holdback,
-                    "credit": 0.0,
-                    "partner_id": original_liquidity_line["partner_id"],
-                    "account_id": self.journal_id.factor_holdback_account_id.id,
-                }
-            )
-
-        if float_compare(limit_holdback, 0.0, precision_rounding=dg) > 0:
-            liquidity_lines.append(
-                {
-                    "name": f"{_('Limit Holdback')} - "
-                    f"{original_liquidity_line['name']}",
-                    "date_maturity": original_liquidity_line["date_maturity"],
-                    "amount_currency": limit_holdback,
-                    "currency_id": original_liquidity_line["currency_id"],
-                    "debit": limit_holdback,
-                    "credit": 0.0,
-                    "partner_id": original_liquidity_line["partner_id"],
-                    "account_id": self.journal_id.factor_limit_holdback_account_id.id,
-                }
-            )
-        return liquidity_lines + new_line_vals
-
-    # def _synchronize_from_moves(self, changed_fields):
-    #     """
-    #     We skip the super move synchronization and do our own here
-    #     """
-    #     if self._context.get("factor_move_synchronization"):
-    #         for pay in self.with_context(skip_account_move_synchronization=True):
-    #             if pay.journal_id.is_factor:
-    #                 pass
-    #                 # TODO implement? see super method
-    #     else:
-    #         # if we did nothing bank statement transfer from
-    #         # factor to bank account would fail
-    #         # because factor accounts are not receivable nor payable.
-    #         context_dict = {}
-    #         factor_accounts = set()
-    #         for journal in self.env["account.journal"].search(
-    #             [("is_factor", "=", True)]
-    #         ):
-    #             factor_accounts.add(journal.default_account_id)
-    #             factor_accounts.add(journal.factor_holdback_account_id)
-    #         for pay in self:
-    #             for line in pay.line_ids:
-    #                 if (
-    #                     line.journal_id.type == "bank"
-    #                     and line.account_id in factor_accounts
-    #                 ):
-    #                     context_dict = {"skip_account_move_synchronization": True}
-    #                     break
-    #         return super(
-    #             AccountPayment, self.with_context(context_dict)
-    #         )._synchronize_from_moves(changed_fields)
+        return res

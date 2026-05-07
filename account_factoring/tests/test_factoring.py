@@ -12,42 +12,34 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
         super().setUpClass()
 
         cls.account_account = cls.env["account.account"]
+
         cls.account_factor = cls.account_account.create(
-            dict(
-                code="140000",
-                name="FACTOR",
-                # user_type_id=cls.env.ref(
-                #     "account.data_account_type_current_liabilities"
-                # ).id,
-                account_type="liability_current",
-                internal_group="liability",
-                reconcile=False,
-            )
+            {
+                "code": "140000",
+                "name": "FACTOR",
+                "account_type": "asset_cash",
+                "reconcile": True,
+            }
         )
+
         cls.account_factor_holdback = cls.account_account.create(
-            dict(
-                code="140010",
-                name="FACTOR - holdback",
-                # user_type_id=cls.env.ref(
-                #     "account.data_account_type_current_liabilities"
-                # ).id,
-                account_type="liability_current",
-                internal_group="liability",
-                reconcile=True,
-            )
+            {
+                "code": "140010",
+                "name": "FACTOR - holdback",
+                "account_type": "liability_current",
+                "reconcile": True,
+            }
         )
+
         cls.acc_factor_limit_holdback = cls.account_account.create(
-            dict(
-                code="140020",
-                name="FACTOR - limit holdback",
-                # user_type_id=cls.env.ref(
-                #     "account.data_account_type_current_liabilities"
-                # ).id,
-                account_type="liability_current",
-                internal_group="liability",
-                reconcile=True,
-            )
+            {
+                "code": "140020",
+                "name": "FACTOR - limit holdback",
+                "account_type": "liability_current",
+                "reconcile": True,
+            }
         )
+
         cls.journal_factor = cls.env["account.journal"].create(
             {
                 "name": "FACTOR",
@@ -60,12 +52,14 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
                 "factor_holdback_percent": 10,
             }
         )
+
+        cls.inbound_manual_method = cls.env.ref(
+            "account.account_payment_method_manual_in"
+        )
         cls.payment_mode_factor = cls.env["account.payment.mode"].create(
             {
                 "name": "FACT",
-                "payment_method_id": cls.env.ref(
-                    "account.account_payment_method_manual_in"
-                ).id,
+                "payment_method_id": cls.inbound_manual_method.id,
                 "bank_account_link": "fixed",
                 "fixed_journal_id": cls.journal_factor.id,
             }
@@ -76,10 +70,9 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
             partner=cls.env.ref("base.res_partner_12"),
             products=[cls.product_a],
         )
-
         cls.factor_inv.payment_mode_id = cls.payment_mode_factor
 
-    def initial_balance(self):
+    def test_initial_balance(self):
         self.assertEqual(self.factor_inv.partner_id.factor_credit, 0)
         self.assertEqual(self.factor_inv.partner_id.factor_holdback, 0)
 
@@ -165,6 +158,7 @@ class TestFactorInvoice(AccountTestInvoicingCommon):
         self.factor_inv.partner_id.factor_credit_limit = 800
         self.factor_inv._post()
         self.factor_inv.button_transfer_to_factor()
+
         transfer = self.factor_inv.factor_transfer_id
         self.assertTrue(
             abs(transfer.amount_total - 1000.0 * 1.15) < 0.01
