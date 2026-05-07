@@ -21,7 +21,7 @@ Available addons
 ----------------
 addon | version | maintainers | summary
 --- | --- | --- | ---
-[account_factoring](account_factoring/) | 18.0.1.0.0 |  | Factoring
+[account_factoring](account_factoring/) | 18.0.1.1.0 |  | Factoring
 
 [//]: # (end addons)
 
