@@ -3,6 +3,7 @@ name = "odoo-addons-akretion-odoo-factoring"
 version = "18.0.20260507.0"
 dependencies = [
     "odoo-addon-account_factoring==18.0.*",
+    "odoo-addon-account_factoring_oca==18.0.*",
 ]
 classifiers=[
     "Programming Language :: Python",
